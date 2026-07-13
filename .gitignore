@@ -1,0 +1,12 @@
+# Runtime study data (progress, user-supplied question banks)
+/data/
+
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
