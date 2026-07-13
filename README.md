@@ -21,6 +21,21 @@ python -m teach_me
 
 It reads `teach-me.toml` from the current directory if there is one. And falls back to the bundled example subject and sample bank otherwise.
 
+## Studying
+
+The menu lets you quiz all questions (weakest and unseen first), drill a single
+topic, target your weak areas automatically, run only unseen questions, or
+review the ones you got wrong. There's also a dashboard with per-topic accuracy,
+coverage, and your current focus areas.
+
+In a quiz, answer with letters — `a`, or `ac` for a multi-answer question. Press
+`t` to ask the tutor: before you answer it gives hints without spoiling it,
+after you answer it explains in depth (it knows what you picked). `s` skips, `m`
+goes back to the menu.
+
+Progress is saved to `data/progress.json` after every answer, and a question is
+"mastered" once you get it right twice in a row.
+
 ## The tutor works with any LLM
 
 The tutor uses an OpenAI-compatible client, so you can point it at whatever provider you have a key for. Configure it in your subject's TOML file:
@@ -79,6 +94,9 @@ A question bank is a JSON array. Each question declares its own topics, so the t
 - `correct` holds zero-based indices into `options` (a list, so multi-answer
   questions just list several).
 - `topics` drives the per-topic stats and weak-area targeting.
+- Optional `source`, `set`, and `category` fields are carried through. If your
+  questions use `set` (e.g. separate practice exams), the menu gains a switcher
+  to study one set at a time.
 - See [`examples/`](examples/) for a complete sample bank and config.
 
 ### Let an AI write the bank for you
