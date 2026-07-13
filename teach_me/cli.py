@@ -5,8 +5,8 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 
-from . import analytics, dashboard, quiz
-from .config import Config, load_config
+from . import analytics, dashboard, quiz, tutor
+from .config import Config, TutorConfig, load_config
 from .models import Bank, Err, Ok, Question
 from .storage import Progress, load_bank, load_progress, save_progress
 
@@ -34,6 +34,39 @@ def _render_question(q: Question, index: int, total: int) -> None:
     console.print(Panel(body, title=header, border_style="blue"))
 
 
+def _tutor_chat(tutor_cfg: TutorConfig, subject: str, summary: str,
+                question: Question | None = None, result: str | None = None,
+                reveal_answer: bool = True) -> None:
+    try:
+        session = tutor.Tutor(tutor_cfg, subject, question=question, result=result,
+                              progress_summary=summary, reveal_answer=reveal_answer)
+    except Exception as exc:  # constructing the client can fail (bad base_url, etc.)
+        console.print(f"[red]Could not start tutor: {exc}[/red]")
+        return
+    console.print("[dim]Tutor — type a question, or 'back' to return.[/dim]")
+    while True:
+        try:
+            msg = console.input("[bold magenta]you ›[/bold magenta] ").strip()
+        except (EOFError, KeyboardInterrupt):
+            break
+        if not msg:
+            continue
+        if msg.lower() in ("back", "exit", "quit", "q"):
+            break
+        console.print("[bold green]tutor ›[/bold green] ", end="")
+        try:
+            session.ask(msg)
+        except Exception as exc:  # network / API errors mid-chat are recoverable
+            console.print(f"\n[red]Tutor error: {exc}[/red]")
+        console.print()
+
+
+def _save(progress: Progress, path: Path) -> None:
+    result = save_progress(progress, path)
+    if isinstance(result, Err):
+        console.print(f"[red]Warning: {result.message}[/red]")
+
+
 def _finish_session(progress: Progress, path: Path, asked: int, correct: int) -> None:
     if not asked:
         return
@@ -43,29 +76,40 @@ def _finish_session(progress: Progress, path: Path, asked: int, correct: int) ->
                   f"({100 * correct / asked:.0f}%)[/bold]\n")
 
 
-def _save(progress: Progress, path: Path) -> None:
-    result = save_progress(progress, path)
-    if isinstance(result, Err):
-        console.print(f"[red]Warning: {result.message}[/red]")
-
-
-def _run_quiz(bank: Bank, progress: Progress, path: Path, mode: str,
-              topic: str | None = None) -> None:
+def _run_quiz(cfg: Config, bank: Bank, progress: Progress, path: Path, mode: str,
+              topic: str | None = None, tutor_on: bool = False) -> None:
     pool = quiz.pick_questions(bank, progress, mode, topic)
     if not pool:
         console.print("[yellow]No questions match that selection.[/yellow]")
         return
+    summary = analytics.progress_summary_text(bank, progress)
+    hint = ", 't' tutor" if tutor_on else ""
 
     asked = correct_count = 0
     for index, q in enumerate(pool, 1):
         console.clear()
         _render_question(q, index, len(pool))
 
-        answer = _prompt_answer(q)
-        if answer is _MENU:
-            _finish_session(progress, path, asked, correct_count)
-            return
-        if answer is _SKIP:
+        answer = None
+        while answer is None:
+            raw = console.input(f"[bold]Your answer[/bold] (letters{hint}, 's' skip, 'm' menu): ")
+            low = raw.strip().lower()
+            if low == "m":
+                _finish_session(progress, path, asked, correct_count)
+                return
+            if low == "s":
+                break
+            if low == "t" and tutor_on:
+                _tutor_chat(cfg.tutor, cfg.subject, summary, question=q,
+                            result="has not answered yet", reveal_answer=False)
+                _render_question(q, index, len(pool))
+                continue
+            result = quiz.parse_answer(raw, len(q.options))
+            if isinstance(result, Ok):
+                answer = result.value
+            else:
+                console.print(f"[red]{result.message}[/red]")
+        if answer is None:  # skipped
             continue
 
         correct = quiz.is_correct(q, answer)
@@ -82,29 +126,27 @@ def _run_quiz(bank: Bank, progress: Progress, path: Path, mode: str,
         if q.explanation:
             console.print(Panel(q.explanation, title="Explanation", border_style="yellow"))
 
-        if console.input("[dim][Enter] next  •  'm' menu[/dim] ").strip().lower() == "m":
+        if _after_answer(cfg, summary, q, answer, correct, tutor_on):
             _finish_session(progress, path, asked, correct_count)
             return
 
     _finish_session(progress, path, asked, correct_count)
 
 
-_SKIP = object()
-_MENU = object()
-
-
-def _prompt_answer(q: Question):
+def _after_answer(cfg: Config, summary: str, q: Question, answer: frozenset[int],
+                  correct: bool, tutor_on: bool) -> bool:
+    """Returns True if the student asked to return to the menu."""
+    prompt = "[dim][Enter] next" + ("  •  't' tutor" if tutor_on else "") + "  •  'm' menu[/dim] "
     while True:
-        raw = console.input("[bold]Your answer[/bold] (letters, 's' skip, 'm' menu): ").strip()
-        low = raw.lower()
-        if low == "m":
-            return _MENU
-        if low == "s":
-            return _SKIP
-        result = quiz.parse_answer(raw, len(q.options))
-        if isinstance(result, Ok):
-            return result.value
-        console.print(f"[red]{result.message}[/red]")
+        nxt = console.input(prompt).strip().lower()
+        if nxt == "t" and tutor_on:
+            picked = ", ".join(chr(ord("A") + i) for i in sorted(answer))
+            result = "answered correctly" if correct else f"answered incorrectly (picked {picked})"
+            _tutor_chat(cfg.tutor, cfg.subject, summary, question=q, result=result)
+        elif nxt == "m":
+            return True
+        else:
+            return False
 
 
 def _choose_topic(bank: Bank) -> str | None:
@@ -128,7 +170,7 @@ def _choose_set(bank: Bank, current: str | None) -> str | None:
     return options[int(raw) - 1] if raw.isdigit() and 1 <= int(raw) <= len(options) else current
 
 
-def _menu(subject: str, count: int, set_label: str | None, has_sets: bool) -> None:
+def _menu(subject: str, count: int, set_label: str | None, has_sets: bool, tutor_on: bool) -> None:
     where = f" — {set_label}" if set_label else ""
     console.print(f"\n[bold]{subject}[/bold]{where} — {count} questions\n")
     console.print("  [cyan]1[/cyan]. Quiz — all questions (weakest first)")
@@ -137,23 +179,19 @@ def _menu(subject: str, count: int, set_label: str | None, has_sets: bool) -> No
     console.print("  [cyan]4[/cyan]. Quiz — unseen questions")
     console.print("  [cyan]5[/cyan]. Review — questions I got wrong")
     console.print("  [cyan]6[/cyan]. Progress dashboard")
+    if tutor_on:
+        console.print("  [cyan]7[/cyan]. Talk to the tutor")
     if has_sets:
-        console.print("  [cyan]7[/cyan]. Switch question set")
+        console.print("  [cyan]s[/cyan]. Switch question set")
     console.print("  [cyan]q[/cyan]. Quit")
 
 
-def _load_everything() -> Config | None:
+def main() -> None:
     cfg_result = load_config()
     if isinstance(cfg_result, Err):
         console.print(f"[red]{cfg_result.message}[/red]")
-        return None
-    return cfg_result.value
-
-
-def main() -> None:
-    cfg = _load_everything()
-    if cfg is None:
         sys.exit(1)
+    cfg = cfg_result.value
 
     bank_result = load_bank(cfg.bank_path)
     if isinstance(bank_result, Err):
@@ -168,34 +206,40 @@ def main() -> None:
         sys.exit(1)
     progress = progress_result.value
 
+    tutor_on = cfg.tutor is not None and tutor.tutor_available(cfg.tutor)
+    if cfg.tutor is not None and not tutor_on:
+        console.print(f"[yellow]Tutor disabled — set ${cfg.tutor.api_key_env} to enable it.[/yellow]")
     has_sets = bool(_bank_sets(full_bank))
     active_set: str | None = None
 
     while True:
         bank = _filtered_bank(full_bank, active_set)
-        _menu(cfg.subject, len(bank), active_set if has_sets else None, has_sets)
+        _menu(cfg.subject, len(bank), active_set if has_sets else None, has_sets, tutor_on)
         choice = console.input("[bold]Choose:[/bold] ").strip().lower()
 
         if choice == "1":
-            _run_quiz(bank, progress, progress_path, "all")
+            _run_quiz(cfg, bank, progress, progress_path, "all", tutor_on=tutor_on)
         elif choice == "2":
             topic = _choose_topic(bank)
             if topic:
-                _run_quiz(bank, progress, progress_path, "topic", topic)
+                _run_quiz(cfg, bank, progress, progress_path, "topic", topic, tutor_on=tutor_on)
         elif choice == "3":
             weak = analytics.weak_topics(bank, progress)[:3]
             if weak:
                 console.print(f"[cyan]Focusing on: {', '.join(t.topic for t in weak)}[/cyan]")
             else:
                 console.print("[yellow]Not enough data yet — using the whole bank.[/yellow]")
-            _run_quiz(bank, progress, progress_path, "weak")
+            _run_quiz(cfg, bank, progress, progress_path, "weak", tutor_on=tutor_on)
         elif choice == "4":
-            _run_quiz(bank, progress, progress_path, "unseen")
+            _run_quiz(cfg, bank, progress, progress_path, "unseen", tutor_on=tutor_on)
         elif choice == "5":
-            _run_quiz(bank, progress, progress_path, "missed")
+            _run_quiz(cfg, bank, progress, progress_path, "missed", tutor_on=tutor_on)
         elif choice == "6":
             dashboard.show_dashboard(console, bank, progress)
-        elif choice == "7" and has_sets:
+        elif choice == "7" and tutor_on:
+            summary = analytics.progress_summary_text(bank, progress)
+            _tutor_chat(cfg.tutor, cfg.subject, summary)
+        elif choice == "s" and has_sets:
             active_set = _choose_set(full_bank, active_set)
         elif choice in ("q", "quit", "exit"):
             break
