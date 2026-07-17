@@ -102,11 +102,24 @@ body {
 main { flex: 1; padding-block: 2.25rem 3rem; }
 
 .site-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
   padding-block: .75rem 1.25rem;
   color: var(--dim);
   font-size: .75rem;
   min-height: 2.5rem;
 }
+
+.foot-repo {
+  margin-left: auto;   /* stays right even when the keys hint is hidden */
+  color: var(--dim);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--line);
+  white-space: nowrap;
+}
+.foot-repo:hover, .foot-repo:focus-visible { color: var(--pen); border-bottom-color: var(--pen); }
 
 /* ── Type ──────────────────────────────────────────────── */
 
