@@ -513,7 +513,7 @@ kbd {
 
 /* keyboard hints are noise without a keyboard */
 @media (hover: none) and (pointer: coarse) {
-  #foot-keys, #keys-hint { display: none; }
+  #foot-keys { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

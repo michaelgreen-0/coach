@@ -1,4 +1,4 @@
-from .cli import main
+from .web import main
 
 if __name__ == "__main__":
     try:

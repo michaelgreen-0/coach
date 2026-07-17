@@ -1,4 +1,4 @@
-"""Web front end. Same flows as the CLI, exposed as a small JSON API.
+"""Web front end — the study flows exposed as a small JSON API.
 
 Grading stays server-side: quiz payloads never include `correct` or
 `explanation`, so the browser can't leak answers before they're earned.
@@ -13,7 +13,7 @@ import threading
 from dataclasses import dataclass
 from pathlib import Path
 
-from fastapi import Cookie, Depends, FastAPI, HTTPException, Response
+from fastapi import Cookie, Depends, FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -21,18 +21,20 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from . import analytics, quiz, tutor
 from .auth import SESSION_TTL, SessionStore, UserStore
-from .config import Chapter, Config, load_config
+from .config import Config, Subject, load_config
+from .limits import RateLimiter
 from .models import Bank, Err, Question
 from .storage import Progress, load_bank, load_progress, save_progress
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 INVITE_ENV = "TEACH_ME_INVITE_CODE"
 SESSION_COOKIE = "session"
+AUTH_ATTEMPTS, AUTH_WINDOW = 10, 300  # sign-in tries per IP per 5 minutes
 
 
 @dataclass
-class ChapterState:
-    chapter: Chapter
+class SubjectState:
+    subject: Subject
     bank: Bank
     by_id: dict[int, Question]
 
@@ -72,19 +74,19 @@ class QuizRequest(BaseModel):
     mode: str
     topic: str | None = None
     set: str | None = None
-    chapter: str | None = None
+    subject: str | None = None
 
 
 class AnswerRequest(BaseModel):
     id: int
-    answer: str  # letters, exactly as the CLI accepts them ("a", "ac", ...)
-    chapter: str | None = None
+    answer: str  # option letters, e.g. "a" or "ac" for multi-answer
+    subject: str | None = None
 
 
 class SessionRequest(BaseModel):
     asked: int
     correct: int
-    chapter: str | None = None
+    subject: str | None = None
 
 
 class TutorRequest(BaseModel):
@@ -95,7 +97,7 @@ class TutorRequest(BaseModel):
     correct: bool | None = None
     picked: str = ""  # letters the student chose, for the post-answer context
     set: str | None = None
-    chapter: str | None = None
+    subject: str | None = None
 
 
 def create_app(config_path: Path | None = None) -> FastAPI:
@@ -104,17 +106,17 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         raise RuntimeError(cfg_result.message)
     cfg: Config = cfg_result.value
 
-    states: dict[str, ChapterState] = {}
-    for ch in cfg.chapters:
-        bank_result = load_bank(ch.bank_path)
+    states: dict[str, SubjectState] = {}
+    for subj in cfg.subjects:
+        bank_result = load_bank(subj.bank_path)
         if isinstance(bank_result, Err):
-            raise RuntimeError(f"chapter '{ch.subject}': {bank_result.message}")
-        states[ch.slug] = ChapterState(
-            chapter=ch,
+            raise RuntimeError(f"subject '{subj.name}': {bank_result.message}")
+        states[subj.slug] = SubjectState(
+            subject=subj,
             bank=bank_result.value,
             by_id={q.id: q for q in bank_result.value.questions},
         )
-    default_slug = cfg.chapters[0].slug
+    default_slug = cfg.subjects[0].slug
 
     users = UserStore(cfg.data_dir / "users.json")
     sessions = SessionStore(cfg.data_dir / "sessions.json")
@@ -123,6 +125,7 @@ def create_app(config_path: Path | None = None) -> FastAPI:
     tutor_on = cfg.tutor is not None and tutor.tutor_available(cfg.tutor)
     lock = threading.Lock()  # guards the per-user progress cache and its saves
     progress_cache: dict[tuple[str, str], UserProgress] = {}
+    limiter = RateLimiter()
 
     app = FastAPI(title="teach-me")
 
@@ -135,18 +138,24 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         username = sessions.resolve(session)
         if username is None:
             raise HTTPException(status_code=401, detail="not signed in")
+        if not limiter.allow(f"api:{username}", cfg.limits.requests_per_minute, 60):
+            raise HTTPException(status_code=429,
+                                detail="too many requests — give it a minute")
         return username
 
-    def _chapter_state(slug: str | None) -> ChapterState | None:
+    def _client_ip(request: Request) -> str:
+        return request.client.host if request.client else "unknown"
+
+    def _subject_state(slug: str | None) -> SubjectState | None:
         return states.get(slug or default_slug)
 
-    def _user_progress(user: str, st: ChapterState) -> UserProgress | Err:
-        key = (user, st.chapter.slug)
+    def _user_progress(user: str, st: SubjectState) -> UserProgress | Err:
+        key = (user, st.subject.slug)
         with lock:
             cached = progress_cache.get(key)
             if cached is not None:
                 return cached
-            path = cfg.data_dir / "progress" / user / st.chapter.progress_file
+            path = cfg.data_dir / "progress" / user / st.subject.progress_file
             result = load_progress(path)
             if isinstance(result, Err):
                 return result
@@ -179,7 +188,9 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         }
 
     @app.post("/api/register")
-    def register(req: RegisterRequest, response: Response):
+    def register(req: RegisterRequest, request: Request, response: Response):
+        if not limiter.allow(f"auth:{_client_ip(request)}", AUTH_ATTEMPTS, AUTH_WINDOW):
+            return _err("too many attempts — try again in a few minutes", status=429)
         if invite_code and not secrets.compare_digest(req.invite, invite_code):
             return _err("wrong invite code", status=403)
         result = users.register(req.username, req.password)
@@ -188,7 +199,9 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         return _sign_in(response, req.username)
 
     @app.post("/api/login")
-    def login(req: LoginRequest, response: Response):
+    def login(req: LoginRequest, request: Request, response: Response):
+        if not limiter.allow(f"auth:{_client_ip(request)}", AUTH_ATTEMPTS, AUTH_WINDOW):
+            return _err("too many attempts — try again in a few minutes", status=429)
         if not users.verify(req.username, req.password):
             return _err("wrong username or password", status=401)
         return _sign_in(response, req.username)
@@ -201,33 +214,33 @@ def create_app(config_path: Path | None = None) -> FastAPI:
 
     # ── studying ──────────────────────────────────────────
 
-    @app.get("/api/chapters")
-    def chapters(user: str = Depends(current_user)):
+    @app.get("/api/subjects")
+    def subjects(user: str = Depends(current_user)):
         return {
-            "chapters": [
+            "subjects": [
                 {
-                    "slug": ch.slug,
-                    "subject": ch.subject,
-                    "question_count": len(states[ch.slug].bank),
+                    "slug": subj.slug,
+                    "name": subj.name,
+                    "question_count": len(states[subj.slug].bank),
                 }
-                for ch in cfg.chapters
+                for subj in cfg.subjects
             ],
         }
 
     @app.get("/api/state")
-    def state(chapter: str | None = None, set: str | None = None,
+    def state(subject: str | None = None, set: str | None = None,
               user: str = Depends(current_user)):
-        st = _chapter_state(chapter)
+        st = _subject_state(subject)
         if st is None:
-            return _err(f"unknown chapter: {chapter}", status=404)
+            return _err(f"unknown subject: {subject}", status=404)
         bank = _filtered_bank(st.bank, set)
         topics = [
             {"name": t, "questions": sum(1 for q in bank.questions if t in q.topics)}
             for t in bank.topics()
         ]
         return {
-            "chapter": st.chapter.slug,
-            "subject": st.chapter.subject,
+            "subject": st.subject.slug,
+            "name": st.subject.name,
             "sets": _bank_sets(st.bank),
             "active_set": set,
             "question_count": len(bank),
@@ -241,9 +254,9 @@ def create_app(config_path: Path | None = None) -> FastAPI:
 
     @app.post("/api/quiz")
     def start_quiz(req: QuizRequest, user: str = Depends(current_user)):
-        st = _chapter_state(req.chapter)
+        st = _subject_state(req.subject)
         if st is None:
-            return _err(f"unknown chapter: {req.chapter}", status=404)
+            return _err(f"unknown subject: {req.subject}", status=404)
         up = _user_progress(user, st)
         if isinstance(up, Err):
             return _err(up.message, status=500)
@@ -261,7 +274,7 @@ def create_app(config_path: Path | None = None) -> FastAPI:
                 "question": q.question,
                 "options": list(q.options),
                 "topics": list(q.topics),
-                # the CLI tells you how many to pick on multi-answer questions
+                # tells the UI how many to pick on multi-answer questions
                 "select_n": len(q.correct) if q.is_multi else None,
             }
             for q in pool
@@ -270,9 +283,9 @@ def create_app(config_path: Path | None = None) -> FastAPI:
 
     @app.post("/api/answer")
     def answer(req: AnswerRequest, user: str = Depends(current_user)):
-        st = _chapter_state(req.chapter)
+        st = _subject_state(req.subject)
         if st is None:
-            return _err(f"unknown chapter: {req.chapter}", status=404)
+            return _err(f"unknown subject: {req.subject}", status=404)
         q = st.by_id.get(req.id)
         if q is None:
             return _err(f"unknown question id: {req.id}", status=404)
@@ -296,9 +309,9 @@ def create_app(config_path: Path | None = None) -> FastAPI:
 
     @app.post("/api/session")
     def finish_session(req: SessionRequest, user: str = Depends(current_user)):
-        st = _chapter_state(req.chapter)
+        st = _subject_state(req.subject)
         if st is None:
-            return _err(f"unknown chapter: {req.chapter}", status=404)
+            return _err(f"unknown subject: {req.subject}", status=404)
         if req.asked <= 0:
             return {"recorded": False, "warning": None}
         up = _user_progress(user, st)
@@ -310,11 +323,11 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         return {"recorded": True, "warning": warning}
 
     @app.get("/api/dashboard")
-    def dashboard_data(chapter: str | None = None, set: str | None = None,
+    def dashboard_data(subject: str | None = None, set: str | None = None,
                        user: str = Depends(current_user)):
-        st = _chapter_state(chapter)
+        st = _subject_state(subject)
         if st is None:
-            return _err(f"unknown chapter: {chapter}", status=404)
+            return _err(f"unknown subject: {subject}", status=404)
         up = _user_progress(user, st)
         if isinstance(up, Err):
             return _err(up.message, status=500)
@@ -325,7 +338,7 @@ def create_app(config_path: Path | None = None) -> FastAPI:
             weak = analytics.weak_topics(bank, up.progress)[:3]
             overall = analytics.overall_accuracy(bank, up.progress)
 
-        # Same ordering as the terminal dashboard: weakest attempted first.
+        # weakest attempted first
         stats.sort(key=lambda t: (t.accuracy is None, t.accuracy or 0))
         return {
             "topics": [
@@ -350,9 +363,9 @@ def create_app(config_path: Path | None = None) -> FastAPI:
     def tutor_chat(req: TutorRequest, user: str = Depends(current_user)):
         if not tutor_on:
             return _err("tutor is not configured", status=503)
-        st = _chapter_state(req.chapter)
+        st = _subject_state(req.subject)
         if st is None:
-            return _err(f"unknown chapter: {req.chapter}", status=404)
+            return _err(f"unknown subject: {req.subject}", status=404)
 
         question: Question | None = None
         result: str | None = None
@@ -368,6 +381,11 @@ def create_app(config_path: Path | None = None) -> FastAPI:
                 result = ("answered correctly" if req.correct
                           else f"answered incorrectly (picked {req.picked})")
 
+        # the tutor is the endpoint that costs real money — budget it per user
+        if not limiter.allow(f"tutor:{user}", cfg.limits.tutor_per_day, 86400):
+            return _err("tutor budget used up for today — it resets over the next 24h",
+                        status=429)
+
         up = _user_progress(user, st)
         if isinstance(up, Err):
             return _err(up.message, status=500)
@@ -376,7 +394,7 @@ def create_app(config_path: Path | None = None) -> FastAPI:
             summary = analytics.progress_summary_text(bank, up.progress)
 
         try:
-            session = tutor.Tutor(cfg.tutor, st.chapter.subject, question=question,
+            session = tutor.Tutor(cfg.tutor, st.subject.name, question=question,
                                   result=result, progress_summary=summary,
                                   reveal_answer=reveal)
         except Exception as exc:  # constructing the client can fail (bad base_url, etc.)

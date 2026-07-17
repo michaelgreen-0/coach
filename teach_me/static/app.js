@@ -6,8 +6,8 @@ const S = {
   username: null,  // signed-in user
   authMode: "login",
   inviteRequired: false,
-  chapters: [],    // /api/chapters payload
-  chapter: null,   // active chapter slug
+  subjects: [],    // /api/subjects payload
+  subject: null,   // active subject slug
   info: null,      // /api/state payload
   set: null,       // active question set, null = all
   quiz: null,      // {pool, i, asked, correct, mode, focus, stage, selected, graded}
@@ -17,7 +17,7 @@ const S = {
 };
 
 const $ = (id) => document.getElementById(id);
-const VIEWS = ["auth", "chapters", "menu", "topics", "quiz", "done", "dashboard", "tutor"];
+const VIEWS = ["auth", "subjects", "menu", "topics", "quiz", "done", "dashboard", "tutor"];
 
 function el(tag, cls, text) {
   const n = document.createElement(tag);
@@ -85,9 +85,6 @@ function showAuth() {
 function setAuthMode(mode) {
   S.authMode = mode;
   const login = mode === "login";
-  $("auth-sub").textContent = login
-    ? "sign in to pick up where you left off."
-    : "make an account — your progress is yours alone.";
   $("auth-submit").textContent = login ? "sign in" : "create account";
   $("auth-toggle").textContent = login
     ? "new here? create an account"
@@ -105,7 +102,7 @@ function renderUserChip() {
 async function signedIn(username) {
   S.username = username;
   renderUserChip();
-  await loadChapters();
+  await loadSubjects();
 }
 
 $("auth-form").addEventListener("submit", async (e) => {
@@ -133,8 +130,8 @@ $("auth-toggle").addEventListener("click", () => {
 
 $("sign-out").addEventListener("click", async () => {
   try { await api("/api/logout", {}); } catch { /* signing out locally regardless */ }
-  S.chapter = null;
-  S.chapters = [];
+  S.subject = null;
+  S.subjects = [];
   S.set = null;
   S.quiz = null;
   S.sessionMsg = null;
@@ -142,40 +139,40 @@ $("sign-out").addEventListener("click", async () => {
   showAuth();
 });
 
-/* ── Chapter picker ──────────────────────────────────────── */
+/* ── Subject picker ──────────────────────────────────────── */
 
-async function loadChapters() {
-  const data = await api("/api/chapters");
-  S.chapters = data.chapters;
-  if (S.chapters.length === 1) {
-    selectChapter(S.chapters[0].slug);
+async function loadSubjects() {
+  const data = await api("/api/subjects");
+  S.subjects = data.subjects;
+  if (S.subjects.length === 1) {
+    selectSubject(S.subjects[0].slug);
   } else {
-    renderChapters();
+    renderSubjects();
   }
 }
 
-function renderChapters() {
-  const list = $("chapter-list");
+function renderSubjects() {
+  const list = $("subject-list");
   list.replaceChildren();
-  S.chapters.forEach((ch, i) => {
-    list.append(tocRow(String(i + 1), ch.subject, null,
-      `${ch.question_count} questions`, () => selectChapter(ch.slug)));
+  S.subjects.forEach((subj, i) => {
+    list.append(tocRow(String(i + 1), subj.name, null,
+      `${subj.question_count} questions`, () => selectSubject(subj.slug)));
   });
-  show("chapters");
+  show("subjects");
 }
 
-function selectChapter(slug) {
-  S.chapter = slug;
+function selectSubject(slug) {
+  S.subject = slug;
   S.set = null;
   S.sessionMsg = null;
   backToMenu();
 }
 
 function goHome() {
-  if (S.chapters.length > 1) {
+  if (S.subjects.length > 1) {
     S.sessionMsg = null;
-    renderChapters();
-  } else if (S.chapter) {
+    renderSubjects();
+  } else if (S.subject) {
     backToMenu();
   }
 }
@@ -204,7 +201,7 @@ function tocRow(key, label, sub, count, run) {
 
 async function loadState() {
   const params = new URLSearchParams();
-  if (S.chapter) params.set("chapter", S.chapter);
+  if (S.subject) params.set("subject", S.subject);
   if (S.set) params.set("set", S.set);
   const qs = params.toString();
   S.info = await api("/api/state" + (qs ? `?${qs}` : ""));
@@ -230,7 +227,7 @@ function renderSetSwitch() {
 }
 
 function renderMenu() {
-  $("subject").textContent = S.info.subject;
+  $("subject").textContent = S.info.name;
   const where = S.set ? ` — ${S.set}` : "";
   $("bank-meta").textContent = `${S.info.question_count} questions${where}`;
 
@@ -250,8 +247,8 @@ function renderMenu() {
   if (S.info.tutor_on) {
     prog.append(tocRow("7", "talk to the tutor", null, null, () => openTutor(null, "menu")));
   }
-  if (S.chapters.length > 1) {
-    prog.append(tocRow("c", "switch chapter", null, null, goHome));
+  if (S.subjects.length > 1) {
+    prog.append(tocRow("c", "switch subject", null, null, goHome));
   }
 
   const hint = $("tutor-hint");
@@ -282,7 +279,7 @@ function showTopics() {
 async function startQuiz(mode, topic = null) {
   let data;
   try {
-    data = await api("/api/quiz", { mode, topic, set: S.set, chapter: S.chapter });
+    data = await api("/api/quiz", { mode, topic, set: S.set, subject: S.subject });
   } catch (e) { notice(e.message); return; }
   if (!data.questions.length) {
     show("menu");
@@ -396,7 +393,7 @@ async function checkAnswer() {
   const letters = [...qz.selected].sort((a, b) => a - b).map(letter).join("");
   let res;
   try {
-    res = await api("/api/answer", { id: q.id, answer: letters, chapter: S.chapter });
+    res = await api("/api/answer", { id: q.id, answer: letters, subject: S.subject });
   } catch (e) { notice(e.message); return; }
 
   qz.asked += 1;
@@ -478,7 +475,7 @@ async function endSession(dest) {
   S.quiz = null;
   if (qz.asked > 0) {
     try {
-      const res = await api("/api/session", { asked: qz.asked, correct: qz.correct, chapter: S.chapter });
+      const res = await api("/api/session", { asked: qz.asked, correct: qz.correct, subject: S.subject });
       if (res.warning) notice("warning: " + res.warning);
     } catch (e) { notice(e.message); }
     const pct = Math.round((100 * qz.correct) / qz.asked);
@@ -499,7 +496,7 @@ async function endSession(dest) {
 
 async function showDashboard() {
   const params = new URLSearchParams();
-  if (S.chapter) params.set("chapter", S.chapter);
+  if (S.subject) params.set("subject", S.subject);
   if (S.set) params.set("set", S.set);
   const qs = params.toString();
   let d;
@@ -589,11 +586,13 @@ function openTutor(ctx, returnTo) {
     busy: false,
   };
   $("chat-log").replaceChildren();
-  $("tutor-context").textContent = ctx
-    ? (ctx.stage === "hint"
-        ? `about question #${ctx.qid} — hints only, no spoilers.`
-        : `about question #${ctx.qid}.`)
-    : "general study chat — the tutor knows your progress.";
+  const context = $("tutor-context");
+  context.hidden = !ctx;
+  if (ctx) {
+    context.textContent = ctx.stage === "hint"
+      ? `about question #${ctx.qid} — hints only, no spoilers.`
+      : `about question #${ctx.qid}.`;
+  }
   show("tutor");
   $("chat-input").focus();
 }
@@ -634,7 +633,7 @@ async function sendToTutor(text) {
         correct: t.correct,
         picked: t.picked,
         set: S.set,
-        chapter: S.chapter,
+        subject: S.subject,
       }),
     });
   } catch (e) {
@@ -702,17 +701,17 @@ document.addEventListener("keydown", (e) => {
   }
   const k = e.key.toLowerCase();
 
-  if (S.view === "chapters") {
+  if (S.view === "subjects") {
     const i = Number(k) - 1;
-    if (Number.isInteger(i) && i >= 0 && i < S.chapters.length) {
-      selectChapter(S.chapters[i].slug);
+    if (Number.isInteger(i) && i >= 0 && i < S.subjects.length) {
+      selectSubject(S.subjects[i].slug);
     }
   } else if (S.view === "menu") {
     const item = MENU_STUDY.find((m) => m.key === k);
     if (item) { e.preventDefault(); item.run(); }
     else if (k === "6") showDashboard();
     else if (k === "7" && S.info.tutor_on) openTutor(null, "menu");
-    else if (k === "c" && S.chapters.length > 1) goHome();
+    else if (k === "c" && S.subjects.length > 1) goHome();
     else if (k === "s" && S.info.sets.length) $("set-select").focus();
   } else if (S.view === "topics") {
     if (k === "m" || k === "escape") show("menu");

@@ -20,36 +20,47 @@ class TutorConfig(BaseModel):
     guidelines: str = ""
 
 
-class _RawChapter(BaseModel):
-    subject: str
+class LimitsConfig(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    # per signed-in user; the tutor cap is what protects your LLM bill
+    requests_per_minute: int = 120
+    tutor_per_day: int = 50
+
+
+class _RawSubject(BaseModel):
+    name: str
     bank: str
 
 
 class _RawConfig(BaseModel):
-    subject: str | None = None
+    # a plain string is the single-subject shorthand; [[subject]] tables are
+    # the full form (TOML forbids mixing the two under one key)
+    subject: str | list[_RawSubject] | None = None
     bank: str | None = None
-    chapter: list[_RawChapter] = []
     data_dir: str = "data"
     tutor: TutorConfig | None = None
+    limits: LimitsConfig = LimitsConfig()
 
 
 @dataclass(frozen=True)
-class Chapter:
+class Subject:
     slug: str  # stable id: keys the API and the progress file name
-    subject: str
+    name: str
     bank_path: Path  # absolute; resolved relative to the config file
     progress_file: str  # file name inside data_dir
 
 
 @dataclass(frozen=True)
 class Config:
-    chapters: tuple[Chapter, ...]
+    subjects: tuple[Subject, ...]
     data_dir: Path  # for saved progress; relative to the cwd unless absolute
     tutor: TutorConfig | None
+    limits: LimitsConfig
 
 
-def _slug(subject: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "-", subject.lower()).strip("-") or "chapter"
+def _slug(name: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or "subject"
 
 
 def _discover() -> Path:
@@ -57,31 +68,29 @@ def _discover() -> Path:
     return local if local.is_file() else BUNDLED_CONFIG
 
 
-def _chapters(raw: _RawConfig, base: Path) -> Result[tuple[Chapter, ...]]:
-    legacy = raw.subject is not None or raw.bank is not None
-    if legacy and raw.chapter:
-        return Err("use either top-level subject/bank or [[chapter]] entries, not both")
-
-    if legacy:
-        if raw.subject is None or raw.bank is None:
+def _subjects(raw: _RawConfig, base: Path) -> Result[tuple[Subject, ...]]:
+    if isinstance(raw.subject, str) or (raw.subject is None and raw.bank is not None):
+        if not isinstance(raw.subject, str) or raw.bank is None:
             return Err("a subject and a bank are both required")
-        # single-chapter configs keep the historical progress.json path
-        return Ok((Chapter(_slug(raw.subject), raw.subject,
+        # single-subject configs keep the historical progress.json path
+        return Ok((Subject(_slug(raw.subject), raw.subject,
                            (base / raw.bank).resolve(), "progress.json"),))
 
-    if not raw.chapter:
-        return Err("config needs a subject and bank, or one or more [[chapter]] entries")
+    if not raw.subject:
+        return Err("config needs a subject and bank, or one or more [[subject]] entries")
+    if raw.bank is not None:
+        return Err("use either top-level subject/bank or [[subject]] entries, not both")
 
-    chapters = tuple(
-        Chapter(_slug(c.subject), c.subject, (base / c.bank).resolve(),
-                f"progress-{_slug(c.subject)}.json")
-        for c in raw.chapter
+    subjects = tuple(
+        Subject(_slug(s.name), s.name, (base / s.bank).resolve(),
+                f"progress-{_slug(s.name)}.json")
+        for s in raw.subject
     )
-    slugs = [c.slug for c in chapters]
+    slugs = [s.slug for s in subjects]
     dupes = sorted({s for s in slugs if slugs.count(s) > 1})
     if dupes:
-        return Err(f"chapter subjects collide: {', '.join(dupes)}")
-    return Ok(chapters)
+        return Err(f"subject names collide: {', '.join(dupes)}")
+    return Ok(subjects)
 
 
 def load_config(path: Path | None = None) -> Result[Config]:
@@ -97,12 +106,13 @@ def load_config(path: Path | None = None) -> Result[Config]:
     except ValidationError as exc:
         return Err(f"{cfg_path}: {_format(exc)}")
 
-    chapters = _chapters(raw, cfg_path.parent)
-    if isinstance(chapters, Err):
-        return Err(f"{cfg_path}: {chapters.message}")
+    subjects = _subjects(raw, cfg_path.parent)
+    if isinstance(subjects, Err):
+        return Err(f"{cfg_path}: {subjects.message}")
 
     return Ok(Config(
-        chapters=chapters.value,
+        subjects=subjects.value,
         data_dir=Path(raw.data_dir),
         tutor=raw.tutor,
+        limits=raw.limits,
     ))

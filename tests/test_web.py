@@ -54,7 +54,7 @@ def client(tmp_path):
 
 def test_state(client):
     data = client.get("/api/state").json()
-    assert data["subject"] == "Test Subject"
+    assert data["name"] == "Test Subject"
     assert data["question_count"] == 3
     assert data["sets"] == ["Exam A", "Exam B"]
     assert data["tutor_on"] is False
@@ -150,7 +150,7 @@ def test_tutor_unconfigured(client):
 
 
 @pytest.fixture()
-def chapter_client(tmp_path):
+def subject_client(tmp_path):
     (tmp_path / "bank.json").write_text(json.dumps(BANK))
     (tmp_path / "mini.json").write_text(json.dumps([
         {"id": 1, "question": "1 + 1?", "options": ["1", "2"], "correct": [1],
@@ -159,49 +159,49 @@ def chapter_client(tmp_path):
     cfg = tmp_path / "teach-me.toml"
     cfg.write_text(
         f'data_dir = "{tmp_path / "data"}"\n'
-        '[[chapter]]\nsubject = "Big Exam"\nbank = "bank.json"\n'
-        '[[chapter]]\nsubject = "Mini Exam"\nbank = "mini.json"\n'
+        '[[subject]]\nname = "Big Exam"\nbank = "bank.json"\n'
+        '[[subject]]\nname = "Mini Exam"\nbank = "mini.json"\n'
     )
     return _signed_in_client(cfg)
 
 
-def test_chapters_listing(chapter_client):
-    data = chapter_client.get("/api/chapters").json()
-    assert data["chapters"] == [
-        {"slug": "big-exam", "subject": "Big Exam", "question_count": 3},
-        {"slug": "mini-exam", "subject": "Mini Exam", "question_count": 1},
+def test_subjects_listing(subject_client):
+    data = subject_client.get("/api/subjects").json()
+    assert data["subjects"] == [
+        {"slug": "big-exam", "name": "Big Exam", "question_count": 3},
+        {"slug": "mini-exam", "name": "Mini Exam", "question_count": 1},
     ]
 
 
-def test_chapter_scoping(chapter_client, tmp_path):
-    state = chapter_client.get("/api/state", params={"chapter": "mini-exam"}).json()
-    assert state["subject"] == "Mini Exam"
+def test_subject_scoping(subject_client, tmp_path):
+    state = subject_client.get("/api/state", params={"subject": "mini-exam"}).json()
+    assert state["name"] == "Mini Exam"
     assert state["question_count"] == 1
 
-    # same question id in both chapters grades against the right bank
-    res = chapter_client.post("/api/answer",
-                              json={"id": 1, "answer": "b", "chapter": "mini-exam"}).json()
+    # same question id in both subjects grades against the right bank
+    res = subject_client.post("/api/answer",
+                              json={"id": 1, "answer": "b", "subject": "mini-exam"}).json()
     assert res["correct"] is True
 
-    # and progress lands in the chapter's own file, under the user's directory
+    # and progress lands in the subject's own file, under the user's directory
     saved = json.loads((tmp_path / "data" / "progress" / "tester"
                         / "progress-mini-exam.json").read_text())
     assert saved["questions"]["1"]["correct"] == 1
     assert not (tmp_path / "data" / "progress" / "tester"
                 / "progress-big-exam.json").exists()
 
-    d = chapter_client.get("/api/dashboard", params={"chapter": "big-exam"}).json()
+    d = subject_client.get("/api/dashboard", params={"subject": "big-exam"}).json()
     assert d["coverage"] == {"seen": 0, "total": 3, "mastered": 0}
 
 
-def test_unknown_chapter_is_404(chapter_client):
-    assert chapter_client.get("/api/state", params={"chapter": "nope"}).status_code == 404
-    assert chapter_client.post("/api/quiz", json={"mode": "all", "chapter": "nope"}).status_code == 404
+def test_unknown_subject_is_404(subject_client):
+    assert subject_client.get("/api/state", params={"subject": "nope"}).status_code == 404
+    assert subject_client.post("/api/quiz", json={"mode": "all", "subject": "nope"}).status_code == 404
 
 
-def test_omitted_chapter_defaults_to_first(chapter_client):
-    state = chapter_client.get("/api/state").json()
-    assert state["subject"] == "Big Exam"
+def test_omitted_subject_defaults_to_first(subject_client):
+    state = subject_client.get("/api/state").json()
+    assert state["name"] == "Big Exam"
 
 
 def test_index_served(client):
@@ -222,7 +222,7 @@ def anon_client(tmp_path):
 
 def test_endpoints_require_auth(anon_client):
     for res in (
-        anon_client.get("/api/chapters"),
+        anon_client.get("/api/subjects"),
         anon_client.get("/api/state"),
         anon_client.post("/api/quiz", json={"mode": "all"}),
         anon_client.post("/api/answer", json={"id": 1, "answer": "a"}),
@@ -306,6 +306,48 @@ def test_invite_code(tmp_path, monkeypatch):
                      json={"username": "friend", "password": "password123",
                            "invite": "sesame"})
     assert ok.status_code == 200
+
+
+def test_request_rate_limit(tmp_path):
+    (tmp_path / "bank.json").write_text(json.dumps(BANK))
+    cfg = tmp_path / "teach-me.toml"
+    cfg.write_text(
+        f'subject = "Test Subject"\nbank = "bank.json"\ndata_dir = "{tmp_path / "data"}"\n'
+        "[limits]\nrequests_per_minute = 3\n"
+    )
+    client = _signed_in_client(cfg)
+    for _ in range(3):
+        assert client.get("/api/state").status_code == 200
+    res = client.get("/api/state")
+    assert res.status_code == 429
+    assert "too many requests" in res.json()["error"]
+
+
+def test_tutor_daily_budget(tmp_path):
+    (tmp_path / "bank.json").write_text(json.dumps(BANK))
+    cfg = tmp_path / "teach-me.toml"
+    cfg.write_text(
+        f'subject = "Test Subject"\nbank = "bank.json"\ndata_dir = "{tmp_path / "data"}"\n'
+        "[limits]\ntutor_per_day = 1\n"
+        # localhost counts as keyless, so the tutor is "on" without an API key
+        '[tutor]\nmodel = "stub"\nbase_url = "http://localhost:9/v1"\n'
+    )
+    client = _signed_in_client(cfg)
+    first = client.post("/api/tutor", json={"message": "hi"})
+    assert first.status_code == 200  # the call is spent even though nothing listens
+    second = client.post("/api/tutor", json={"message": "hi again"})
+    assert second.status_code == 429
+    assert "budget" in second.json()["error"]
+
+
+def test_auth_attempts_are_throttled(anon_client):
+    for _ in range(10):
+        res = anon_client.post("/api/login",
+                               json={"username": "ghost", "password": "wrongwrong"})
+        assert res.status_code == 401
+    res = anon_client.post("/api/login",
+                           json={"username": "ghost", "password": "wrongwrong"})
+    assert res.status_code == 429
 
 
 def test_sessions_survive_restart(tmp_path):

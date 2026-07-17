@@ -1,17 +1,26 @@
 # Example config. Copy this to `teach-me.toml` in your working directory and
 # edit it, or just run `python -m teach_me` to use this bundled example as-is.
 #
-# Each [[chapter]] is one thing you're studying — a certification, an exam
-# path, a course. You pick a chapter when the app starts. A config can also
-# use a single top-level `subject`/`bank` pair instead if it has one chapter.
+# Each [[subject]] is one thing you're studying — a certification, an exam
+# path, a course. You pick a subject when the app starts. A config with a
+# single subject can use the shorthand instead:
+#
+#   subject = "General Knowledge"
+#   bank    = "sample-bank.json"
 
-[[chapter]]
-subject = "General Knowledge"
+[[subject]]
+name = "General Knowledge"
 bank = "sample-bank.json"   # relative to this config file
 
-[[chapter]]
-subject = "Python Basics"
+[[subject]]
+name = "Python Basics"
 bank = "python-bank.json"
+
+# Per-user rate limits. These are the defaults; the tutor cap is
+# what protects your LLM bill.
+#[limits]
+#requests_per_minute = 120
+#tutor_per_day      = 50
 
 [tutor]
 model       = "claude-sonnet-5"
@@ -21,5 +30,5 @@ persona     = "a friendly, encouraging quiz tutor"
 guidelines  = """
 Explain concepts clearly and concretely. When the student gets something wrong,
 explain why their choice is wrong and why the correct answer is right — don't
-just restate the answer. Keep replies focused and readable in a terminal.
+just restate the answer. Keep replies focused and easy to read.
 """

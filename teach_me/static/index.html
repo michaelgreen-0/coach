@@ -31,7 +31,6 @@
   <!-- ── Sign in ──────────────────────────────────────── -->
   <section id="view-auth" hidden>
     <h1 class="subject">who's studying?</h1>
-    <p class="subject-meta" id="auth-sub">sign in to pick up where you left off.</p>
     <form class="auth-form" id="auth-form">
       <label class="field">
         <span class="field-label">username</span>
@@ -54,13 +53,12 @@
     </form>
   </section>
 
-  <!-- ── Chapter picker ───────────────────────────────── -->
-  <section id="view-chapters" hidden>
+  <!-- ── Subject picker ───────────────────────────────── -->
+  <section id="view-subjects" hidden>
     <h1 class="subject">what are you studying?</h1>
-    <p class="subject-meta">pick a chapter — each one keeps its own progress.</p>
-    <nav class="contents" aria-label="chapters">
-      <h2 class="contents-head">chapters</h2>
-      <ol class="toc" id="chapter-list"></ol>
+    <nav class="contents" aria-label="subjects">
+      <h2 class="contents-head">subjects</h2>
+      <ol class="toc" id="subject-list"></ol>
     </nav>
   </section>
 
@@ -77,7 +75,6 @@
       <ol class="toc" id="menu-progress"></ol>
     </nav>
     <p class="hint" id="tutor-hint" hidden></p>
-    <p class="hint" id="keys-hint">keys work here too — press a number to choose.</p>
   </section>
 
   <!-- ── Topic picker ─────────────────────────────────── -->
