@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from teach_me.config import BUNDLED_CONFIG, load_config
-from teach_me.models import Err, Ok
+from teach_me.backend.core.config import BUNDLED_CONFIG, load_config
+from teach_me.backend.core.models import Err, Ok
 
 BANK_JSON = '[{"id":1,"question":"q","options":["a","b"],"correct":[0],"topics":["T"]}]'
 

@@ -1,10 +1,3 @@
-"""Users and sessions for the web front end, stored as JSON under data_dir.
-
-Passwords are hashed with scrypt (stdlib) and a per-user salt. Sessions are
-random opaque tokens persisted to disk, so a server restart doesn't sign
-everyone out.
-"""
-
 import hashlib
 import hmac
 import json
@@ -43,7 +36,6 @@ class SessionRecord(BaseModel):
 
 
 def _load_json(path: Path, model: type[BaseModel]) -> dict:
-    """Best-effort read of a {key: record} file; unreadable files start empty."""
     if not path.exists():
         return {}
     try:

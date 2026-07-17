@@ -1,4 +1,4 @@
-from teach_me.limits import RateLimiter
+from teach_me.backend.core.limits import RateLimiter
 
 
 def make(start=0.0):

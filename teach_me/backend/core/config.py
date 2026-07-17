@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 
 from .models import Err, Ok, Result, _format
 
-BUNDLED_CONFIG = Path(__file__).resolve().parent.parent / "examples" / "teach-me.toml"
+BUNDLED_CONFIG = Path(__file__).resolve().parents[3] / "examples" / "teach-me.toml"
 
 
 class TutorConfig(BaseModel):

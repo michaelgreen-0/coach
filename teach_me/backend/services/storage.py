@@ -3,7 +3,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ValidationError
 
-from .models import Bank, Err, Ok, Result, _format, parse_bank
+from ..core.models import Bank, Err, Ok, Result, _format, parse_bank
 
 
 def load_bank(path: Path) -> Result[Bank]:
@@ -35,11 +35,6 @@ class Progress(BaseModel):
     sessions: list[Session] = []
 
     def stats_for(self, qid: int) -> QuestionProgress:
-        """The recorded stats for a question, or a fresh zeroed default.
-
-        The default is not stored — reading an unseen question leaves the
-        progress untouched.
-        """
         return self.questions.get(str(qid), QuestionProgress())
 
 

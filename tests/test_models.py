@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from teach_me.models import (
+from teach_me.backend.core.models import (
     Bank,
     Err,
     Ok,

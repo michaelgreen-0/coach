@@ -3,7 +3,7 @@ import string
 from datetime import datetime, timezone
 
 from . import analytics
-from .models import Bank, Err, Ok, Question, Result
+from ..core.models import Bank, Err, Ok, Question, Result
 from .storage import Progress, QuestionProgress, Session
 
 
@@ -25,11 +25,6 @@ def is_correct(question: Question, answer: frozenset[int]) -> bool:
 def pick_questions(bank: Bank, progress: Progress, mode: str,
                    topic: str | None = None,
                    rng: random.Random | None = None) -> list[Question]:
-    """Order questions for a quiz. Weakest and least-seen surface first.
-
-    Modes: "all", "topic", "unseen", "missed", "weak". An unknown mode, or
-    "weak" with too little data to judge, falls back to the whole bank.
-    """
     rng = rng or random
     if mode == "topic":
         pool = [q for q in bank.questions if topic in q.topics]

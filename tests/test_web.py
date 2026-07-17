@@ -3,7 +3,7 @@ import json
 import pytest
 from fastapi.testclient import TestClient
 
-from teach_me.web import create_app
+from teach_me.backend.app import create_app
 
 BANK = [
     {

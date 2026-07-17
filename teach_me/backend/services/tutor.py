@@ -2,8 +2,8 @@ import os
 
 from openai import OpenAI
 
-from .config import TutorConfig
-from .models import Question
+from ..core.config import TutorConfig
+from ..core.models import Question
 
 _BASE_SYSTEM = """You are {persona}, helping a student study {subject}.
 
@@ -51,7 +51,6 @@ def _is_local(base_url: str) -> bool:
 
 
 def tutor_available(cfg: TutorConfig) -> bool:
-    """The tutor needs a key, unless it points at a local (keyless) endpoint."""
     return bool(os.environ.get(cfg.api_key_env)) or _is_local(cfg.base_url)
 
 
@@ -60,8 +59,6 @@ def _lettered(options: tuple[str, ...]) -> str:
 
 
 class Tutor:
-    """One streaming conversation. Create a fresh instance per question/session."""
-
     def __init__(self, cfg: TutorConfig, subject: str, question: Question | None = None,
                  result: str | None = None, progress_summary: str | None = None,
                  reveal_answer: bool = True):
@@ -87,10 +84,6 @@ class Tutor:
             self.system += _PROGRESS.format(summary=progress_summary)
 
     def ask_stream(self, message: str):
-        """Send a message and yield reply chunks as they arrive.
-
-        The full reply is appended to the history once the stream is consumed.
-        """
         self.history.append({"role": "user", "content": message})
         stream = self.client.chat.completions.create(
             model=self.model,
@@ -106,7 +99,6 @@ class Tutor:
         self.history.append({"role": "assistant", "content": "".join(parts)})
 
     def ask(self, message: str) -> str:
-        """Send a message, stream the reply to stdout, and return the full text."""
         for delta in self.ask_stream(message):
             print(delta, end="", flush=True)
         print()

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from .models import Bank
+from ..core.models import Bank
 from .storage import Progress
 
 MASTERY_STREAK = 2  # correct answers in a row before a question counts as mastered
@@ -34,13 +34,11 @@ def topic_stats(bank: Bank, progress: Progress) -> list[TopicStat]:
 
 
 def weak_topics(bank: Bank, progress: Progress, min_attempts: int = 3) -> list[TopicStat]:
-    """Topics with enough data to judge, worst accuracy first."""
     judged = [t for t in topic_stats(bank, progress) if t.attempts >= min_attempts]
     return sorted(judged, key=lambda t: t.accuracy)
 
 
 def coverage(bank: Bank, progress: Progress) -> tuple[int, int, int]:
-    """(attempted, total, mastered) across the bank."""
     seen = mastered = 0
     for q in bank.questions:
         qs = progress.stats_for(q.id)
@@ -61,7 +59,6 @@ def overall_accuracy(bank: Bank, progress: Progress) -> float | None:
 
 
 def progress_summary_text(bank: Bank, progress: Progress) -> str:
-    """Compact per-topic summary fed to the tutor."""
     lines = [
         f"- {t.topic}: {100 * t.accuracy:.0f}% over {t.attempts} attempts"
         for t in topic_stats(bank, progress)

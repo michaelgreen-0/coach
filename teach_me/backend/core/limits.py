@@ -1,8 +1,4 @@
-"""In-memory sliding-window rate limiting, keyed by arbitrary strings.
-
-Single-process only: run uvicorn with one worker (the default), or the
-counters won't be shared.
-"""
+# Single-process only: run uvicorn with one worker (the default), or the counters won't be shared.
 
 import threading
 import time
@@ -19,9 +15,6 @@ class RateLimiter:
         self._calls = 0
 
     def allow(self, key: str, limit: int, window: float) -> bool:
-        """Record one event under `key` unless the last `window` seconds
-        already hold `limit` of them. Refused events are not recorded, so a
-        blocked client doesn't push its own window forward."""
         now = self._clock()
         with self._lock:
             self._calls += 1
