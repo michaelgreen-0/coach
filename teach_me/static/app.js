@@ -3,18 +3,21 @@
 "use strict";
 
 const S = {
+  username: null,  // signed-in user
+  authMode: "login",
+  inviteRequired: false,
   chapters: [],    // /api/chapters payload
   chapter: null,   // active chapter slug
   info: null,      // /api/state payload
   set: null,       // active question set, null = all
   quiz: null,      // {pool, i, asked, correct, mode, focus, stage, selected, graded}
   tutor: null,     // {history, qid, stage, correct, picked, returnTo}
-  view: "chapters",
+  view: "auth",
   sessionMsg: null,
 };
 
 const $ = (id) => document.getElementById(id);
-const VIEWS = ["chapters", "menu", "topics", "quiz", "done", "dashboard", "tutor"];
+const VIEWS = ["auth", "chapters", "menu", "topics", "quiz", "done", "dashboard", "tutor"];
 
 function el(tag, cls, text) {
   const n = document.createElement(tag);
@@ -32,7 +35,13 @@ async function api(path, body) {
     body: JSON.stringify(body),
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || `request failed (${res.status})`);
+  if (!res.ok) {
+    // a session can expire mid-use; anything but the sign-in form goes back to it
+    if (res.status === 401 && S.view !== "auth") showAuth();
+    const err = new Error(data.error || `request failed (${res.status})`);
+    err.status = res.status;
+    throw err;
+  }
   return data;
 }
 
@@ -61,6 +70,77 @@ function setFootKeys(view) {
     f.textContent = "";
   }
 }
+
+/* ── Sign in ─────────────────────────────────────────────── */
+
+function showAuth() {
+  S.username = null;
+  renderUserChip();
+  $("set-switch").hidden = true;
+  setAuthMode(S.authMode);
+  show("auth");
+  $("auth-username").focus();
+}
+
+function setAuthMode(mode) {
+  S.authMode = mode;
+  const login = mode === "login";
+  $("auth-sub").textContent = login
+    ? "sign in to pick up where you left off."
+    : "make an account — your progress is yours alone.";
+  $("auth-submit").textContent = login ? "sign in" : "create account";
+  $("auth-toggle").textContent = login
+    ? "new here? create an account"
+    : "have an account? sign in";
+  $("auth-invite-field").hidden = login || !S.inviteRequired;
+  $("auth-password").autocomplete = login ? "current-password" : "new-password";
+  $("auth-error").hidden = true;
+}
+
+function renderUserChip() {
+  $("user-chip").hidden = !S.username;
+  if (S.username) $("user-name").textContent = S.username + " ·";
+}
+
+async function signedIn(username) {
+  S.username = username;
+  renderUserChip();
+  await loadChapters();
+}
+
+$("auth-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const username = $("auth-username").value.trim();
+  const password = $("auth-password").value;
+  const errBox = $("auth-error");
+  errBox.hidden = true;
+  try {
+    const data = S.authMode === "login"
+      ? await api("/api/login", { username, password })
+      : await api("/api/register", { username, password, invite: $("auth-invite").value.trim() });
+    $("auth-password").value = "";
+    await signedIn(data.username);
+  } catch (err) {
+    errBox.textContent = err.message;
+    errBox.hidden = false;
+  }
+});
+
+$("auth-toggle").addEventListener("click", () => {
+  setAuthMode(S.authMode === "login" ? "register" : "login");
+  $("auth-username").focus();
+});
+
+$("sign-out").addEventListener("click", async () => {
+  try { await api("/api/logout", {}); } catch { /* signing out locally regardless */ }
+  S.chapter = null;
+  S.chapters = [];
+  S.set = null;
+  S.quiz = null;
+  S.sessionMsg = null;
+  S.authMode = "login";
+  showAuth();
+});
 
 /* ── Chapter picker ──────────────────────────────────────── */
 
@@ -563,6 +643,7 @@ async function sendToTutor(text) {
     return;
   }
   if (!res.ok) {
+    if (res.status === 401) { showAuth(); return; }
     const data = await res.json().catch(() => ({}));
     body.textContent = data.error || `tutor error (${res.status})`;
     t.busy = false;
@@ -668,7 +749,14 @@ document.addEventListener("click", (e) => {
 
 /* ── Boot ────────────────────────────────────────────────── */
 
-loadChapters().catch((e) => {
-  show("chapters");
-  notice("could not reach the server: " + e.message);
-});
+(async () => {
+  try {
+    const auth = await api("/api/auth");
+    S.inviteRequired = auth.invite_required;
+    if (auth.signed_in) await signedIn(auth.username);
+    else showAuth();
+  } catch (e) {
+    showAuth();
+    notice("could not reach the server: " + e.message);
+  }
+})();

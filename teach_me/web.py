@@ -2,23 +2,32 @@
 
 Grading stays server-side: quiz payloads never include `correct` or
 `explanation`, so the browser can't leak answers before they're earned.
+
+Every study endpoint requires a signed-in user; each user gets their own
+progress files under data_dir/progress/<username>/.
 """
 
+import os
+import secrets
 import threading
 from dataclasses import dataclass
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import Cookie, Depends, FastAPI, HTTPException, Response
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from . import analytics, quiz, tutor
+from .auth import SESSION_TTL, SessionStore, UserStore
 from .config import Chapter, Config, load_config
 from .models import Bank, Err, Question
 from .storage import Progress, load_bank, load_progress, save_progress
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
+INVITE_ENV = "TEACH_ME_INVITE_CODE"
+SESSION_COOKIE = "session"
 
 
 @dataclass
@@ -26,8 +35,12 @@ class ChapterState:
     chapter: Chapter
     bank: Bank
     by_id: dict[int, Question]
+
+
+@dataclass
+class UserProgress:
     progress: Progress
-    progress_path: Path
+    path: Path
 
 
 def _bank_sets(bank: Bank) -> list[str]:
@@ -42,6 +55,17 @@ def _filtered_bank(bank: Bank, active_set: str | None) -> Bank:
 
 def _err(message: str, status: int = 400) -> JSONResponse:
     return JSONResponse({"error": message}, status_code=status)
+
+
+class RegisterRequest(BaseModel):
+    username: str
+    password: str
+    invite: str = ""
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
 
 
 class QuizRequest(BaseModel):
@@ -85,33 +109,100 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         bank_result = load_bank(ch.bank_path)
         if isinstance(bank_result, Err):
             raise RuntimeError(f"chapter '{ch.subject}': {bank_result.message}")
-        progress_path = cfg.data_dir / ch.progress_file
-        progress_result = load_progress(progress_path)
-        if isinstance(progress_result, Err):
-            raise RuntimeError(f"chapter '{ch.subject}': {progress_result.message}")
         states[ch.slug] = ChapterState(
             chapter=ch,
             bank=bank_result.value,
             by_id={q.id: q for q in bank_result.value.questions},
-            progress=progress_result.value,
-            progress_path=progress_path,
         )
     default_slug = cfg.chapters[0].slug
 
+    users = UserStore(cfg.data_dir / "users.json")
+    sessions = SessionStore(cfg.data_dir / "sessions.json")
+    invite_code = os.environ.get(INVITE_ENV, "")
+
     tutor_on = cfg.tutor is not None and tutor.tutor_available(cfg.tutor)
-    lock = threading.Lock()  # progress is shared mutable state across requests
+    lock = threading.Lock()  # guards the per-user progress cache and its saves
+    progress_cache: dict[tuple[str, str], UserProgress] = {}
 
     app = FastAPI(title="teach-me")
+
+    @app.exception_handler(StarletteHTTPException)
+    async def _http_exc(request, exc):
+        # keep one error envelope everywhere: {"error": ...}
+        return JSONResponse({"error": exc.detail}, status_code=exc.status_code)
+
+    def current_user(session: str | None = Cookie(default=None)) -> str:
+        username = sessions.resolve(session)
+        if username is None:
+            raise HTTPException(status_code=401, detail="not signed in")
+        return username
 
     def _chapter_state(slug: str | None) -> ChapterState | None:
         return states.get(slug or default_slug)
 
-    def _save(st: ChapterState) -> str | None:
-        result = save_progress(st.progress, st.progress_path)
+    def _user_progress(user: str, st: ChapterState) -> UserProgress | Err:
+        key = (user, st.chapter.slug)
+        with lock:
+            cached = progress_cache.get(key)
+            if cached is not None:
+                return cached
+            path = cfg.data_dir / "progress" / user / st.chapter.progress_file
+            result = load_progress(path)
+            if isinstance(result, Err):
+                return result
+            up = UserProgress(progress=result.value, path=path)
+            progress_cache[key] = up
+            return up
+
+    def _save(up: UserProgress) -> str | None:
+        result = save_progress(up.progress, up.path)
         return result.message if isinstance(result, Err) else None
 
+    def _sign_in(response: Response, username: str) -> dict:
+        token = sessions.create(username)
+        response.set_cookie(
+            SESSION_COOKIE, token,
+            max_age=int(SESSION_TTL.total_seconds()),
+            httponly=True, samesite="lax", path="/",
+        )
+        return {"username": username}
+
+    # ── auth ──────────────────────────────────────────────
+
+    @app.get("/api/auth")
+    def auth_status(session: str | None = Cookie(default=None)):
+        username = sessions.resolve(session)
+        return {
+            "signed_in": username is not None,
+            "username": username,
+            "invite_required": bool(invite_code),
+        }
+
+    @app.post("/api/register")
+    def register(req: RegisterRequest, response: Response):
+        if invite_code and not secrets.compare_digest(req.invite, invite_code):
+            return _err("wrong invite code", status=403)
+        result = users.register(req.username, req.password)
+        if isinstance(result, Err):
+            return _err(result.message)
+        return _sign_in(response, req.username)
+
+    @app.post("/api/login")
+    def login(req: LoginRequest, response: Response):
+        if not users.verify(req.username, req.password):
+            return _err("wrong username or password", status=401)
+        return _sign_in(response, req.username)
+
+    @app.post("/api/logout")
+    def logout(response: Response, session: str | None = Cookie(default=None)):
+        sessions.revoke(session)
+        response.delete_cookie(SESSION_COOKIE, path="/")
+        return {"signed_out": True}
+
+    # ── studying ──────────────────────────────────────────
+
     @app.get("/api/chapters")
-    def chapters():
+    def chapters(user: str = Depends(current_user)):
         return {
             "chapters": [
                 {
@@ -124,7 +215,8 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         }
 
     @app.get("/api/state")
-    def state(chapter: str | None = None, set: str | None = None):
+    def state(chapter: str | None = None, set: str | None = None,
+              user: str = Depends(current_user)):
         st = _chapter_state(chapter)
         if st is None:
             return _err(f"unknown chapter: {chapter}", status=404)
@@ -148,17 +240,20 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         }
 
     @app.post("/api/quiz")
-    def start_quiz(req: QuizRequest):
+    def start_quiz(req: QuizRequest, user: str = Depends(current_user)):
         st = _chapter_state(req.chapter)
         if st is None:
             return _err(f"unknown chapter: {req.chapter}", status=404)
+        up = _user_progress(user, st)
+        if isinstance(up, Err):
+            return _err(up.message, status=500)
         bank = _filtered_bank(st.bank, req.set)
         with lock:
-            pool = quiz.pick_questions(bank, st.progress, req.mode, req.topic)
+            pool = quiz.pick_questions(bank, up.progress, req.mode, req.topic)
 
         focus: list[str] = []
         if req.mode == "weak":
-            focus = [t.topic for t in analytics.weak_topics(bank, st.progress)[:3]]
+            focus = [t.topic for t in analytics.weak_topics(bank, up.progress)[:3]]
 
         questions = [
             {
@@ -174,7 +269,7 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         return {"questions": questions, "focus": focus}
 
     @app.post("/api/answer")
-    def answer(req: AnswerRequest):
+    def answer(req: AnswerRequest, user: str = Depends(current_user)):
         st = _chapter_state(req.chapter)
         if st is None:
             return _err(f"unknown chapter: {req.chapter}", status=404)
@@ -184,11 +279,14 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         parsed = quiz.parse_answer(req.answer, len(q.options))
         if isinstance(parsed, Err):
             return _err(parsed.message)
+        up = _user_progress(user, st)
+        if isinstance(up, Err):
+            return _err(up.message, status=500)
 
         correct = quiz.is_correct(q, parsed.value)
         with lock:
-            quiz.record_result(st.progress, q.id, correct)
-            warning = _save(st)
+            quiz.record_result(up.progress, q.id, correct)
+            warning = _save(up)
         return {
             "correct": correct,
             "correct_letters": list(q.answer_letters),
@@ -197,28 +295,35 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         }
 
     @app.post("/api/session")
-    def finish_session(req: SessionRequest):
+    def finish_session(req: SessionRequest, user: str = Depends(current_user)):
         st = _chapter_state(req.chapter)
         if st is None:
             return _err(f"unknown chapter: {req.chapter}", status=404)
         if req.asked <= 0:
             return {"recorded": False, "warning": None}
+        up = _user_progress(user, st)
+        if isinstance(up, Err):
+            return _err(up.message, status=500)
         with lock:
-            quiz.record_session(st.progress, req.asked, req.correct)
-            warning = _save(st)
+            quiz.record_session(up.progress, req.asked, req.correct)
+            warning = _save(up)
         return {"recorded": True, "warning": warning}
 
     @app.get("/api/dashboard")
-    def dashboard_data(chapter: str | None = None, set: str | None = None):
+    def dashboard_data(chapter: str | None = None, set: str | None = None,
+                       user: str = Depends(current_user)):
         st = _chapter_state(chapter)
         if st is None:
             return _err(f"unknown chapter: {chapter}", status=404)
+        up = _user_progress(user, st)
+        if isinstance(up, Err):
+            return _err(up.message, status=500)
         bank = _filtered_bank(st.bank, set)
         with lock:
-            stats = analytics.topic_stats(bank, st.progress)
-            seen, total, mastered = analytics.coverage(bank, st.progress)
-            weak = analytics.weak_topics(bank, st.progress)[:3]
-            overall = analytics.overall_accuracy(bank, st.progress)
+            stats = analytics.topic_stats(bank, up.progress)
+            seen, total, mastered = analytics.coverage(bank, up.progress)
+            weak = analytics.weak_topics(bank, up.progress)[:3]
+            overall = analytics.overall_accuracy(bank, up.progress)
 
         # Same ordering as the terminal dashboard: weakest attempted first.
         stats.sort(key=lambda t: (t.accuracy is None, t.accuracy or 0))
@@ -242,7 +347,7 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         }
 
     @app.post("/api/tutor")
-    def tutor_chat(req: TutorRequest):
+    def tutor_chat(req: TutorRequest, user: str = Depends(current_user)):
         if not tutor_on:
             return _err("tutor is not configured", status=503)
         st = _chapter_state(req.chapter)
@@ -263,9 +368,12 @@ def create_app(config_path: Path | None = None) -> FastAPI:
                 result = ("answered correctly" if req.correct
                           else f"answered incorrectly (picked {req.picked})")
 
+        up = _user_progress(user, st)
+        if isinstance(up, Err):
+            return _err(up.message, status=500)
         bank = _filtered_bank(st.bank, req.set)
         with lock:
-            summary = analytics.progress_summary_text(bank, st.progress)
+            summary = analytics.progress_summary_text(bank, up.progress)
 
         try:
             session = tutor.Tutor(cfg.tutor, st.chapter.subject, question=question,

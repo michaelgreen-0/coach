@@ -37,6 +37,7 @@ graph TD
 
 | Endpoint | CLI equivalent |
 | --- | --- |
+| `GET /api/auth`, `POST /api/register` / `login` / `logout` | (web only — accounts) |
 | `GET /api/chapters` | the chapter picker shown at startup |
 | `GET /api/state` | the main menu header (subject, sets, topics, tutor availability) |
 | `POST /api/quiz` | `pick_questions` — modes `all`, `topic`, `weak`, `unseen`, `missed` |
@@ -56,12 +57,18 @@ Design decisions:
 - **The tutor is stateless per request.** The browser keeps the chat history
   and sends it with each turn; the server rebuilds the system prompt (question
   context, hint vs. reveal stage, progress summary) and streams the reply.
-- **One `Progress` per chapter in memory, one lock.** Each chapter's bank and
-  progress are loaded at startup; requests name the chapter by slug (omitted =
-  first chapter). Mutations happen under a `threading.Lock` and persist after
-  every answer, mirroring the CLI's save-after-every-answer behaviour. There is
-  no authentication: everyone who can reach the server shares the progress
-  files.
+- **Accounts are web-only.** `auth.py` stores scrypt-hashed passwords in
+  `data/users.json` and opaque session tokens (30-day TTL, persisted so
+  restarts don't sign anyone out) in `data/sessions.json`. The session rides an
+  `httponly` `samesite=lax` cookie; every study endpoint requires it. An
+  optional `TEACH_ME_INVITE_CODE` env var gates registration. The CLI stays
+  local and unauthenticated.
+- **One `Progress` per (user, chapter) in memory, one lock.** Banks are loaded
+  at startup; each user's progress loads lazily into a cache keyed by
+  `(username, chapter)` and saves to `data/progress/<username>/` after every
+  answer, mirroring the CLI's save-after-every-answer behaviour. Usernames are
+  validated (`^[a-z0-9][a-z0-9-]{2,31}$`), so they are safe as directory
+  names.
 
 The front end (`teach_me/static/`) is a single page of hand-written HTML, CSS
 and vanilla JS — no build step. `app.js` is a small state machine over the

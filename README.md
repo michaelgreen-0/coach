@@ -27,13 +27,33 @@ uv run python -m teach_me.web
 # then open http://127.0.0.1:8000
 ```
 
-Both read `teach-me.toml` from the current directory if there is one, and fall back to the bundled example subject and sample bank otherwise. They share the same saved progress, so you can switch between them freely.
+Both read `teach-me.toml` from the current directory if there is one, and fall back to the bundled example subject and sample bank otherwise.
 
 To serve the web app to other machines (e.g. for deployment), bind uvicorn yourself:
 
 ```bash
 uv run uvicorn --factory 'teach_me.web:create_app' --host 0.0.0.0 --port 8000
 ```
+
+## Accounts (web only)
+
+The web app asks you to sign in; each account keeps its own progress under
+`data/progress/<username>/`. Accounts are simple username + password
+(scrypt-hashed, stored in `data/users.json`); sessions are 30-day cookies that
+survive server restarts.
+
+Registration is open by default. To keep a deployed instance to your friends,
+set an invite code — signups then require it:
+
+```bash
+TEACH_ME_INVITE_CODE=sesame uv run uvicorn --factory 'teach_me.web:create_app' --host 0.0.0.0
+```
+
+Put the app behind HTTPS in production (a reverse proxy like Caddy is the easy
+way) — the password and session cookie travel in plain text otherwise.
+
+The terminal UI has no accounts: it's local, and keeps using
+`data/progress*.json` directly, separate from web users' progress.
 
 ## Studying
 

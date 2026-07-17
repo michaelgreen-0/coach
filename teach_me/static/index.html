@@ -14,13 +14,45 @@
 
 <header class="site-head">
   <button class="wordmark" id="home-link" type="button">teach-me</button>
-  <label class="set-switch" id="set-switch" hidden>
-    <span class="visually-hidden">question set</span>
-    <select id="set-select"></select>
-  </label>
+  <span class="head-right">
+    <label class="set-switch" id="set-switch" hidden>
+      <span class="visually-hidden">question set</span>
+      <select id="set-select"></select>
+    </label>
+    <span class="user-chip mono" id="user-chip" hidden>
+      <span id="user-name"></span>
+      <button class="btn quiet" id="sign-out" type="button">sign out</button>
+    </span>
+  </span>
 </header>
 
 <main id="app">
+
+  <!-- ── Sign in ──────────────────────────────────────── -->
+  <section id="view-auth" hidden>
+    <h1 class="subject">who's studying?</h1>
+    <p class="subject-meta" id="auth-sub">sign in to pick up where you left off.</p>
+    <form class="auth-form" id="auth-form">
+      <label class="field">
+        <span class="field-label">username</span>
+        <input id="auth-username" type="text" autocomplete="username"
+               autocapitalize="none" spellcheck="false" required>
+      </label>
+      <label class="field">
+        <span class="field-label">password</span>
+        <input id="auth-password" type="password" autocomplete="current-password" required>
+      </label>
+      <label class="field" id="auth-invite-field" hidden>
+        <span class="field-label">invite code</span>
+        <input id="auth-invite" type="text" autocomplete="off">
+      </label>
+      <p class="warn" id="auth-error" hidden></p>
+      <div class="auth-actions">
+        <button class="btn primary" id="auth-submit" type="submit">sign in</button>
+        <button class="btn quiet" id="auth-toggle" type="button">new here? create an account</button>
+      </div>
+    </form>
+  </section>
 
   <!-- ── Chapter picker ───────────────────────────────── -->
   <section id="view-chapters" hidden>

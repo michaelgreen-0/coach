@@ -21,6 +21,9 @@
 
 * { box-sizing: border-box; margin: 0; }
 
+/* class display rules must never resurrect [hidden] elements */
+[hidden] { display: none !important; }
+
 html { height: 100%; }
 
 body {
@@ -70,6 +73,21 @@ body {
 }
 .wordmark:hover { color: var(--pen-deep); }
 .wordmark::before { content: "◉ "; color: var(--pen); }
+
+.head-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .1rem;
+  font-size: .8rem;
+  color: var(--dim);
+}
+.user-chip .btn { font-size: .8rem; padding: .2rem .5rem; }
 
 .set-switch select {
   font: 500 .8rem var(--mono);
@@ -438,6 +456,40 @@ kbd {
   padding: .5rem .75rem;
 }
 .chat-form input:focus-visible { outline-offset: 0; }
+
+/* ── Sign in ───────────────────────────────────────────── */
+
+.auth-form {
+  margin-top: 2rem;
+  display: grid;
+  gap: 1.1rem;
+  max-width: 22rem;
+}
+
+.field { display: grid; gap: .35rem; }
+
+.field-label {
+  font: 500 .75rem var(--mono);
+  letter-spacing: .12em;
+  color: var(--dim);
+}
+
+.field input {
+  font: inherit;
+  color: inherit;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: .55rem .75rem;
+}
+.field input:focus-visible { outline-offset: 0; }
+
+.auth-actions {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  flex-wrap: wrap;
+}
 
 /* ── Notices ───────────────────────────────────────────── */
 
