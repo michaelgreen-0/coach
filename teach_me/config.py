@@ -1,3 +1,4 @@
+import re
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
@@ -19,24 +20,68 @@ class TutorConfig(BaseModel):
     guidelines: str = ""
 
 
-class _RawConfig(BaseModel):
+class _RawChapter(BaseModel):
     subject: str
     bank: str
+
+
+class _RawConfig(BaseModel):
+    subject: str | None = None
+    bank: str | None = None
+    chapter: list[_RawChapter] = []
     data_dir: str = "data"
     tutor: TutorConfig | None = None
 
 
 @dataclass(frozen=True)
-class Config:
+class Chapter:
+    slug: str  # stable id: keys the API and the progress file name
     subject: str
     bank_path: Path  # absolute; resolved relative to the config file
+    progress_file: str  # file name inside data_dir
+
+
+@dataclass(frozen=True)
+class Config:
+    chapters: tuple[Chapter, ...]
     data_dir: Path  # for saved progress; relative to the cwd unless absolute
     tutor: TutorConfig | None
+
+
+def _slug(subject: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", subject.lower()).strip("-") or "chapter"
 
 
 def _discover() -> Path:
     local = Path("teach-me.toml")
     return local if local.is_file() else BUNDLED_CONFIG
+
+
+def _chapters(raw: _RawConfig, base: Path) -> Result[tuple[Chapter, ...]]:
+    legacy = raw.subject is not None or raw.bank is not None
+    if legacy and raw.chapter:
+        return Err("use either top-level subject/bank or [[chapter]] entries, not both")
+
+    if legacy:
+        if raw.subject is None or raw.bank is None:
+            return Err("a subject and a bank are both required")
+        # single-chapter configs keep the historical progress.json path
+        return Ok((Chapter(_slug(raw.subject), raw.subject,
+                           (base / raw.bank).resolve(), "progress.json"),))
+
+    if not raw.chapter:
+        return Err("config needs a subject and bank, or one or more [[chapter]] entries")
+
+    chapters = tuple(
+        Chapter(_slug(c.subject), c.subject, (base / c.bank).resolve(),
+                f"progress-{_slug(c.subject)}.json")
+        for c in raw.chapter
+    )
+    slugs = [c.slug for c in chapters]
+    dupes = sorted({s for s in slugs if slugs.count(s) > 1})
+    if dupes:
+        return Err(f"chapter subjects collide: {', '.join(dupes)}")
+    return Ok(chapters)
 
 
 def load_config(path: Path | None = None) -> Result[Config]:
@@ -52,9 +97,12 @@ def load_config(path: Path | None = None) -> Result[Config]:
     except ValidationError as exc:
         return Err(f"{cfg_path}: {_format(exc)}")
 
+    chapters = _chapters(raw, cfg_path.parent)
+    if isinstance(chapters, Err):
+        return Err(f"{cfg_path}: {chapters.message}")
+
     return Ok(Config(
-        subject=raw.subject,
-        bank_path=(cfg_path.parent / raw.bank).resolve(),
+        chapters=chapters.value,
         data_dir=Path(raw.data_dir),
         tutor=raw.tutor,
     ))

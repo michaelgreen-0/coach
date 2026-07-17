@@ -1,9 +1,17 @@
-# Example subject config. Copy this to `teach-me.toml` in your working
-# directory and edit it, or just run `python -m teach_me` to use this bundled
-# example as-is.
+# Example config. Copy this to `teach-me.toml` in your working directory and
+# edit it, or just run `python -m teach_me` to use this bundled example as-is.
+#
+# Each [[chapter]] is one thing you're studying — a certification, an exam
+# path, a course. You pick a chapter when the app starts. A config can also
+# use a single top-level `subject`/`bank` pair instead if it has one chapter.
 
+[[chapter]]
 subject = "General Knowledge"
 bank = "sample-bank.json"   # relative to this config file
+
+[[chapter]]
+subject = "Python Basics"
+bank = "python-bank.json"
 
 [tutor]
 model       = "claude-sonnet-5"

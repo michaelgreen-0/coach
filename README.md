@@ -1,37 +1,57 @@
 # teach-me
 
-A generic terminal study tool. Tracks your performance per topic, surfaces your weak spots, and
+A generic study tool with a terminal UI and a web UI. Tracks your performance per topic, surfaces your weak spots, and
 gives you an **LLM-powered tutor** that knows what you're studying and how
 you're doing.
 
 ## Install
 
-Needs Python 3.11 or newer.
+Needs Python 3.11 or newer and [uv](https://docs.astral.sh/uv/).
 
 ```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+uv sync
 ```
 
 ## Run
 
+In the terminal:
+
 ```bash
-python -m teach_me
+uv run python -m teach_me
 ```
 
-It reads `teach-me.toml` from the current directory if there is one. And falls back to the bundled example subject and sample bank otherwise.
+Or in the browser:
+
+```bash
+uv run python -m teach_me.web
+# then open http://127.0.0.1:8000
+```
+
+Both read `teach-me.toml` from the current directory if there is one, and fall back to the bundled example subject and sample bank otherwise. They share the same saved progress, so you can switch between them freely.
+
+To serve the web app to other machines (e.g. for deployment), bind uvicorn yourself:
+
+```bash
+uv run uvicorn --factory 'teach_me.web:create_app' --host 0.0.0.0 --port 8000
+```
 
 ## Studying
 
-The menu lets you quiz all questions (weakest and unseen first), drill a single
-topic, target your weak areas automatically, run only unseen questions, or
-review the ones you got wrong. There's also a dashboard with per-topic accuracy,
-coverage, and your current focus areas.
+If your config has more than one **chapter** (see below), you first pick what
+you're studying. Then the menu lets you quiz all questions (weakest and unseen
+first), drill a single topic, target your weak areas automatically, run only
+unseen questions, or review the ones you got wrong. There's also a dashboard
+with per-topic accuracy, coverage, and your current focus areas.
 
 In a quiz, answer with letters — `a`, or `ac` for a multi-answer question. Press
 `t` to ask the tutor: before you answer it gives hints without spoiling it,
 after you answer it explains in depth (it knows what you picked). `s` skips, `m`
 goes back to the menu.
+
+The web UI has the same flows and the same keyboard shortcuts (letters to
+select, `Enter` to check, `s`/`m`/`t`, number keys on the menu). Answers are
+graded server-side, so the browser never sees the correct option before you
+commit.
 
 Progress is saved to `data/progress.json` after every answer, and a question is
 "mastered" once you get it right twice in a row.
@@ -73,6 +93,29 @@ export OPENAI_API_KEY=...
 ```
 
 BTW The quiz works without any key. Only the tutor needs one.
+
+## Chapters
+
+A chapter is one thing you're studying — a certification, an exam path, a
+course. Each chapter has its own question bank and its own saved progress:
+
+```toml
+[[chapter]]
+subject = "AWS Solutions Architect"
+bank    = "aws-bank.json"
+
+[[chapter]]
+subject = "Networking 101"
+bank    = "net-bank.json"
+
+[tutor]              # shared by all chapters
+model    = "claude-sonnet-5"
+base_url = "https://api.anthropic.com/v1/"
+```
+
+A config with a single top-level `subject`/`bank` pair still works and is the
+same as one chapter (and keeps its progress in `data/progress.json`; chapters
+save to `data/progress-<chapter>.json`).
 
 ## Bring your own bank
 

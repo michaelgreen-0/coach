@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>teach-me</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='none' stroke='%232957CB' stroke-width='9'/><circle cx='50' cy='50' r='20' fill='%23212B33'/></svg>">
+</head>
+<body>
+
+<header class="site-head">
+  <button class="wordmark" id="home-link" type="button">teach-me</button>
+  <label class="set-switch" id="set-switch" hidden>
+    <span class="visually-hidden">question set</span>
+    <select id="set-select"></select>
+  </label>
+</header>
+
+<main id="app">
+
+  <!-- ── Chapter picker ───────────────────────────────── -->
+  <section id="view-chapters" hidden>
+    <h1 class="subject">what are you studying?</h1>
+    <p class="subject-meta">pick a chapter — each one keeps its own progress.</p>
+    <nav class="contents" aria-label="chapters">
+      <h2 class="contents-head">chapters</h2>
+      <ol class="toc" id="chapter-list"></ol>
+    </nav>
+  </section>
+
+  <!-- ── Menu ─────────────────────────────────────────── -->
+  <section id="view-menu" hidden>
+    <h1 id="subject" class="subject"></h1>
+    <p class="subject-meta"><span id="bank-meta"></span></p>
+    <div id="session-banner" class="session-banner" hidden></div>
+
+    <nav class="contents" aria-label="study menu">
+      <h2 class="contents-head">study</h2>
+      <ol class="toc" id="menu-study"></ol>
+      <h2 class="contents-head">progress</h2>
+      <ol class="toc" id="menu-progress"></ol>
+    </nav>
+    <p class="hint" id="tutor-hint" hidden></p>
+    <p class="hint" id="keys-hint">keys work here too — press a number to choose.</p>
+  </section>
+
+  <!-- ── Topic picker ─────────────────────────────────── -->
+  <section id="view-topics" hidden>
+    <h1 class="subject">pick a topic</h1>
+    <ol class="toc" id="topic-list"></ol>
+    <p><button class="btn quiet" data-action="menu">← back to menu</button></p>
+  </section>
+
+  <!-- ── Quiz ─────────────────────────────────────────── -->
+  <section id="view-quiz" hidden>
+    <div class="quiz-head">
+      <span class="counter mono" id="q-counter"></span>
+      <div class="track" aria-hidden="true"><div class="track-fill" id="q-track"></div></div>
+      <span class="q-meta mono" id="q-meta"></span>
+    </div>
+    <p class="focus-note" id="focus-note" hidden></p>
+
+    <h1 class="question" id="q-text"></h1>
+    <p class="multi-note" id="q-multi" hidden></p>
+
+    <ol class="options" id="q-options"></ol>
+
+    <div class="verdict" id="q-verdict" hidden></div>
+    <blockquote class="explanation" id="q-explanation" hidden></blockquote>
+
+    <div class="quiz-actions" id="quiz-actions"></div>
+    <p class="warn" id="save-warn" hidden></p>
+  </section>
+
+  <!-- ── Session summary ──────────────────────────────── -->
+  <section id="view-done" hidden>
+    <h1 class="subject">session over</h1>
+    <p class="session-line" id="done-line"></p>
+    <p><button class="btn primary" data-action="menu">back to menu</button></p>
+  </section>
+
+  <!-- ── Dashboard ────────────────────────────────────── -->
+  <section id="view-dashboard" hidden>
+    <h1 class="subject">performance by topic</h1>
+    <table class="dash" id="dash-table">
+      <thead>
+        <tr><th scope="col">topic</th><th scope="col">coverage</th><th scope="col">attempts</th><th scope="col" colspan="2">accuracy</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <p class="dash-line" id="dash-coverage"></p>
+    <p class="dash-line" id="dash-focus" hidden></p>
+    <p class="dash-line" id="dash-overall" hidden></p>
+    <p><button class="btn quiet" data-action="menu">← back to menu</button></p>
+  </section>
+
+  <!-- ── Tutor ────────────────────────────────────────── -->
+  <section id="view-tutor" hidden>
+    <div class="tutor-head">
+      <h1 class="subject small">tutor</h1>
+      <button class="btn quiet" id="tutor-back">back</button>
+    </div>
+    <p class="hint" id="tutor-context"></p>
+    <div class="chat" id="chat-log" aria-live="polite"></div>
+    <form class="chat-form" id="chat-form">
+      <span class="chat-prompt mono" aria-hidden="true">you&nbsp;›</span>
+      <input id="chat-input" type="text" autocomplete="off"
+             placeholder="ask the tutor — or type 'back' to return" aria-label="message the tutor">
+      <button class="btn primary" type="submit">send</button>
+    </form>
+  </section>
+
+  <!-- ── Notices ──────────────────────────────────────── -->
+  <p class="notice" id="notice" hidden></p>
+
+</main>
+
+<footer class="site-foot">
+  <span class="mono" id="foot-keys"></span>
+</footer>
+
+<script src="/app.js"></script>
+</body>
+</html>

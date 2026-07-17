@@ -6,7 +6,7 @@ from rich.panel import Panel
 from rich.text import Text
 
 from . import analytics, dashboard, quiz, tutor
-from .config import Config, TutorConfig, load_config
+from .config import Chapter, Config, TutorConfig, load_config
 from .models import Bank, Err, Ok, Question
 from .storage import Progress, load_bank, load_progress, save_progress
 
@@ -76,8 +76,8 @@ def _finish_session(progress: Progress, path: Path, asked: int, correct: int) ->
                   f"({100 * correct / asked:.0f}%)[/bold]\n")
 
 
-def _run_quiz(cfg: Config, bank: Bank, progress: Progress, path: Path, mode: str,
-              topic: str | None = None, tutor_on: bool = False) -> None:
+def _run_quiz(cfg: Config, subject: str, bank: Bank, progress: Progress, path: Path,
+              mode: str, topic: str | None = None, tutor_on: bool = False) -> None:
     pool = quiz.pick_questions(bank, progress, mode, topic)
     if not pool:
         console.print("[yellow]No questions match that selection.[/yellow]")
@@ -100,7 +100,7 @@ def _run_quiz(cfg: Config, bank: Bank, progress: Progress, path: Path, mode: str
             if low == "s":
                 break
             if low == "t" and tutor_on:
-                _tutor_chat(cfg.tutor, cfg.subject, summary, question=q,
+                _tutor_chat(cfg.tutor, subject, summary, question=q,
                             result="has not answered yet", reveal_answer=False)
                 _render_question(q, index, len(pool))
                 continue
@@ -126,15 +126,15 @@ def _run_quiz(cfg: Config, bank: Bank, progress: Progress, path: Path, mode: str
         if q.explanation:
             console.print(Panel(q.explanation, title="Explanation", border_style="yellow"))
 
-        if _after_answer(cfg, summary, q, answer, correct, tutor_on):
+        if _after_answer(cfg, subject, summary, q, answer, correct, tutor_on):
             _finish_session(progress, path, asked, correct_count)
             return
 
     _finish_session(progress, path, asked, correct_count)
 
 
-def _after_answer(cfg: Config, summary: str, q: Question, answer: frozenset[int],
-                  correct: bool, tutor_on: bool) -> bool:
+def _after_answer(cfg: Config, subject: str, summary: str, q: Question,
+                  answer: frozenset[int], correct: bool, tutor_on: bool) -> bool:
     """Returns True if the student asked to return to the menu."""
     prompt = "[dim][Enter] next" + ("  •  't' tutor" if tutor_on else "") + "  •  'm' menu[/dim] "
     while True:
@@ -142,7 +142,7 @@ def _after_answer(cfg: Config, summary: str, q: Question, answer: frozenset[int]
         if nxt == "t" and tutor_on:
             picked = ", ".join(chr(ord("A") + i) for i in sorted(answer))
             result = "answered correctly" if correct else f"answered incorrectly (picked {picked})"
-            _tutor_chat(cfg.tutor, cfg.subject, summary, question=q, result=result)
+            _tutor_chat(cfg.tutor, subject, summary, question=q, result=result)
         elif nxt == "m":
             return True
         else:
@@ -170,7 +170,8 @@ def _choose_set(bank: Bank, current: str | None) -> str | None:
     return options[int(raw) - 1] if raw.isdigit() and 1 <= int(raw) <= len(options) else current
 
 
-def _menu(subject: str, count: int, set_label: str | None, has_sets: bool, tutor_on: bool) -> None:
+def _menu(subject: str, count: int, set_label: str | None, has_sets: bool,
+          tutor_on: bool, multi_chapter: bool) -> None:
     where = f" — {set_label}" if set_label else ""
     console.print(f"\n[bold]{subject}[/bold]{where} — {count} questions\n")
     console.print("  [cyan]1[/cyan]. Quiz — all questions (weakest first)")
@@ -183,7 +184,83 @@ def _menu(subject: str, count: int, set_label: str | None, has_sets: bool, tutor
         console.print("  [cyan]7[/cyan]. Talk to the tutor")
     if has_sets:
         console.print("  [cyan]s[/cyan]. Switch question set")
+    if multi_chapter:
+        console.print("  [cyan]c[/cyan]. Switch chapter")
     console.print("  [cyan]q[/cyan]. Quit")
+
+
+def _choose_chapter(chapters: tuple[Chapter, ...]) -> Chapter | None:
+    """Pick a chapter, or None to quit."""
+    console.print("\n[bold]Chapters[/bold]\n")
+    for i, ch in enumerate(chapters, 1):
+        console.print(f"  [cyan]{i}[/cyan]. {ch.subject}")
+    console.print("  [cyan]q[/cyan]. Quit")
+    while True:
+        raw = console.input("[bold]Chapter:[/bold] ").strip().lower()
+        if raw in ("q", "quit", "exit"):
+            return None
+        if raw.isdigit() and 1 <= int(raw) <= len(chapters):
+            return chapters[int(raw) - 1]
+        console.print(f"[red]Enter a number 1-{len(chapters)}[/red]")
+
+
+def _run_chapter(cfg: Config, chapter: Chapter, multi_chapter: bool) -> str:
+    """One chapter's menu loop. Returns "switch" or "quit"."""
+    bank_result = load_bank(chapter.bank_path)
+    if isinstance(bank_result, Err):
+        console.print(f"[red]{bank_result.message}[/red]")
+        return "switch" if multi_chapter else "quit"
+    full_bank = bank_result.value
+
+    progress_path = cfg.data_dir / chapter.progress_file
+    progress_result = load_progress(progress_path)
+    if isinstance(progress_result, Err):
+        console.print(f"[red]Could not read progress: {progress_result.message}[/red]")
+        return "quit"
+    progress = progress_result.value
+
+    tutor_on = cfg.tutor is not None and tutor.tutor_available(cfg.tutor)
+    if cfg.tutor is not None and not tutor_on:
+        console.print(f"[yellow]Tutor disabled — set ${cfg.tutor.api_key_env} to enable it.[/yellow]")
+    has_sets = bool(_bank_sets(full_bank))
+    active_set: str | None = None
+    subject = chapter.subject
+
+    while True:
+        bank = _filtered_bank(full_bank, active_set)
+        _menu(subject, len(bank), active_set if has_sets else None, has_sets,
+              tutor_on, multi_chapter)
+        choice = console.input("[bold]Choose:[/bold] ").strip().lower()
+
+        if choice == "1":
+            _run_quiz(cfg, subject, bank, progress, progress_path, "all", tutor_on=tutor_on)
+        elif choice == "2":
+            topic = _choose_topic(bank)
+            if topic:
+                _run_quiz(cfg, subject, bank, progress, progress_path, "topic", topic,
+                          tutor_on=tutor_on)
+        elif choice == "3":
+            weak = analytics.weak_topics(bank, progress)[:3]
+            if weak:
+                console.print(f"[cyan]Focusing on: {', '.join(t.topic for t in weak)}[/cyan]")
+            else:
+                console.print("[yellow]Not enough data yet — using the whole bank.[/yellow]")
+            _run_quiz(cfg, subject, bank, progress, progress_path, "weak", tutor_on=tutor_on)
+        elif choice == "4":
+            _run_quiz(cfg, subject, bank, progress, progress_path, "unseen", tutor_on=tutor_on)
+        elif choice == "5":
+            _run_quiz(cfg, subject, bank, progress, progress_path, "missed", tutor_on=tutor_on)
+        elif choice == "6":
+            dashboard.show_dashboard(console, bank, progress)
+        elif choice == "7" and tutor_on:
+            summary = analytics.progress_summary_text(bank, progress)
+            _tutor_chat(cfg.tutor, subject, summary)
+        elif choice == "s" and has_sets:
+            active_set = _choose_set(full_bank, active_set)
+        elif choice == "c" and multi_chapter:
+            return "switch"
+        elif choice in ("q", "quit", "exit"):
+            return "quit"
 
 
 def main() -> None:
@@ -192,54 +269,14 @@ def main() -> None:
         console.print(f"[red]{cfg_result.message}[/red]")
         sys.exit(1)
     cfg = cfg_result.value
-
-    bank_result = load_bank(cfg.bank_path)
-    if isinstance(bank_result, Err):
-        console.print(f"[red]{bank_result.message}[/red]")
-        sys.exit(1)
-    full_bank = bank_result.value
-
-    progress_path = cfg.data_dir / "progress.json"
-    progress_result = load_progress(progress_path)
-    if isinstance(progress_result, Err):
-        console.print(f"[red]Could not read progress: {progress_result.message}[/red]")
-        sys.exit(1)
-    progress = progress_result.value
-
-    tutor_on = cfg.tutor is not None and tutor.tutor_available(cfg.tutor)
-    if cfg.tutor is not None and not tutor_on:
-        console.print(f"[yellow]Tutor disabled — set ${cfg.tutor.api_key_env} to enable it.[/yellow]")
-    has_sets = bool(_bank_sets(full_bank))
-    active_set: str | None = None
+    multi = len(cfg.chapters) > 1
 
     while True:
-        bank = _filtered_bank(full_bank, active_set)
-        _menu(cfg.subject, len(bank), active_set if has_sets else None, has_sets, tutor_on)
-        choice = console.input("[bold]Choose:[/bold] ").strip().lower()
-
-        if choice == "1":
-            _run_quiz(cfg, bank, progress, progress_path, "all", tutor_on=tutor_on)
-        elif choice == "2":
-            topic = _choose_topic(bank)
-            if topic:
-                _run_quiz(cfg, bank, progress, progress_path, "topic", topic, tutor_on=tutor_on)
-        elif choice == "3":
-            weak = analytics.weak_topics(bank, progress)[:3]
-            if weak:
-                console.print(f"[cyan]Focusing on: {', '.join(t.topic for t in weak)}[/cyan]")
-            else:
-                console.print("[yellow]Not enough data yet — using the whole bank.[/yellow]")
-            _run_quiz(cfg, bank, progress, progress_path, "weak", tutor_on=tutor_on)
-        elif choice == "4":
-            _run_quiz(cfg, bank, progress, progress_path, "unseen", tutor_on=tutor_on)
-        elif choice == "5":
-            _run_quiz(cfg, bank, progress, progress_path, "missed", tutor_on=tutor_on)
-        elif choice == "6":
-            dashboard.show_dashboard(console, bank, progress)
-        elif choice == "7" and tutor_on:
-            summary = analytics.progress_summary_text(bank, progress)
-            _tutor_chat(cfg.tutor, cfg.subject, summary)
-        elif choice == "s" and has_sets:
-            active_set = _choose_set(full_bank, active_set)
-        elif choice in ("q", "quit", "exit"):
-            break
+        if multi:
+            chapter = _choose_chapter(cfg.chapters)
+            if chapter is None:
+                return
+        else:
+            chapter = cfg.chapters[0]
+        if _run_chapter(cfg, chapter, multi) == "quit":
+            return

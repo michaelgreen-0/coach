@@ -86,8 +86,11 @@ class Tutor:
         if progress_summary:
             self.system += _PROGRESS.format(summary=progress_summary)
 
-    def ask(self, message: str) -> str:
-        """Send a message, stream the reply to stdout, and return the full text."""
+    def ask_stream(self, message: str):
+        """Send a message and yield reply chunks as they arrive.
+
+        The full reply is appended to the history once the stream is consumed.
+        """
         self.history.append({"role": "user", "content": message})
         stream = self.client.chat.completions.create(
             model=self.model,
@@ -98,9 +101,13 @@ class Tutor:
         for chunk in stream:
             delta = chunk.choices[0].delta.content
             if delta:
-                print(delta, end="", flush=True)
                 parts.append(delta)
+                yield delta
+        self.history.append({"role": "assistant", "content": "".join(parts)})
+
+    def ask(self, message: str) -> str:
+        """Send a message, stream the reply to stdout, and return the full text."""
+        for delta in self.ask_stream(message):
+            print(delta, end="", flush=True)
         print()
-        reply = "".join(parts)
-        self.history.append({"role": "assistant", "content": reply})
-        return reply
+        return self.history[-1]["content"]
