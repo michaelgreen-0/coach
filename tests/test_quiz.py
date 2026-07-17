@@ -1,14 +1,14 @@
 import random
 
-from teach_me.backend.core.models import Bank, Err, Ok, Question
-from teach_me.backend.services.quiz import (
+from coach.backend.core.models import Bank, Err, Ok, Question
+from coach.backend.services.quiz import (
     is_correct,
     parse_answer,
     pick_questions,
     record_result,
     record_session,
 )
-from teach_me.backend.services.storage import Progress, QuestionProgress
+from coach.backend.services.storage import Progress, QuestionProgress
 
 
 def _q(qid, topics=("T",), correct=(0,)):

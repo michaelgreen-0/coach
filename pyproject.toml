@@ -1,5 +1,5 @@
 [project]
-name = "teach-me"
+name = "coach"
 version = "0.1.0"
 description = "A generic study tool with per-topic tracking and an LLM tutor"
 readme = "README.md"
@@ -24,4 +24,4 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["teach_me"]
+packages = ["coach"]

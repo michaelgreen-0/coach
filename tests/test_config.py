@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from teach_me.backend.core.config import BUNDLED_CONFIG, load_config
-from teach_me.backend.core.models import Err, Ok
+from coach.backend.core.config import BUNDLED_CONFIG, load_config
+from coach.backend.core.models import Err, Ok
 
 BANK_JSON = '[{"id":1,"question":"q","options":["a","b"],"correct":[0],"topics":["T"]}]'
 
@@ -19,7 +19,7 @@ def test_load_bundled_config():
 
 def test_legacy_single_subject_config(tmp_path: Path):
     (tmp_path / "bank.json").write_text(BANK_JSON)
-    cfg_file = tmp_path / "teach-me.toml"
+    cfg_file = tmp_path / "coach.toml"
     cfg_file.write_text('subject = "Sub"\nbank = "bank.json"\n')
 
     result = load_config(cfg_file)
@@ -33,7 +33,7 @@ def test_legacy_single_subject_config(tmp_path: Path):
 
 
 def test_subject_config(tmp_path: Path):
-    cfg_file = tmp_path / "teach-me.toml"
+    cfg_file = tmp_path / "coach.toml"
     cfg_file.write_text(
         '[[subject]]\nname = "AWS SAA"\nbank = "aws.json"\n'
         '[[subject]]\nname = "Networking 101"\nbank = "net.json"\n'
@@ -48,7 +48,7 @@ def test_subject_config(tmp_path: Path):
 
 
 def test_mixing_legacy_and_subject_tables_is_err(tmp_path: Path):
-    cfg_file = tmp_path / "teach-me.toml"
+    cfg_file = tmp_path / "coach.toml"
     cfg_file.write_text(
         'bank = "bank.json"\n'
         '[[subject]]\nname = "Other"\nbank = "other.json"\n'
@@ -59,7 +59,7 @@ def test_mixing_legacy_and_subject_tables_is_err(tmp_path: Path):
 
 
 def test_colliding_subject_slugs_is_err(tmp_path: Path):
-    cfg_file = tmp_path / "teach-me.toml"
+    cfg_file = tmp_path / "coach.toml"
     cfg_file.write_text(
         '[[subject]]\nname = "My Exam"\nbank = "a.json"\n'
         '[[subject]]\nname = "my exam"\nbank = "b.json"\n'
@@ -70,7 +70,7 @@ def test_colliding_subject_slugs_is_err(tmp_path: Path):
 
 
 def test_tutor_is_optional(tmp_path: Path):
-    cfg_file = tmp_path / "teach-me.toml"
+    cfg_file = tmp_path / "coach.toml"
     cfg_file.write_text('subject = "Sub"\nbank = "bank.json"\n')
     result = load_config(cfg_file)
     assert isinstance(result, Ok)
@@ -82,13 +82,13 @@ def test_missing_file_is_err(tmp_path: Path):
 
 
 def test_invalid_toml_is_err(tmp_path: Path):
-    cfg_file = tmp_path / "teach-me.toml"
+    cfg_file = tmp_path / "coach.toml"
     cfg_file.write_text("subject = = broken")
     assert isinstance(load_config(cfg_file), Err)
 
 
 def test_missing_required_field_is_err(tmp_path: Path):
-    cfg_file = tmp_path / "teach-me.toml"
+    cfg_file = tmp_path / "coach.toml"
     cfg_file.write_text('bank = "bank.json"\n')  # no subject
     result = load_config(cfg_file)
     assert isinstance(result, Err)

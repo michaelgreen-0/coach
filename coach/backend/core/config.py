@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 
 from .models import Err, Ok, Result, _format
 
-BUNDLED_CONFIG = Path(__file__).resolve().parents[3] / "examples" / "teach-me.toml"
+BUNDLED_CONFIG = Path(__file__).resolve().parents[3] / "examples" / "coach.toml"
 
 
 class TutorConfig(BaseModel):
@@ -64,7 +64,7 @@ def _slug(name: str) -> str:
 
 
 def _discover() -> Path:
-    local = Path("teach-me.toml")
+    local = Path("coach.toml")
     return local if local.is_file() else BUNDLED_CONFIG
 
 

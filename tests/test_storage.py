@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from teach_me.backend.core.models import Err, Ok
-from teach_me.backend.services.storage import (
+from coach.backend.core.models import Err, Ok
+from coach.backend.services.storage import (
     Progress,
     QuestionProgress,
     Session,

@@ -3,7 +3,7 @@ import json
 import pytest
 from fastapi.testclient import TestClient
 
-from teach_me.backend.app import create_app
+from coach.backend.app import create_app
 
 BANK = [
     {
@@ -45,7 +45,7 @@ def _signed_in_client(cfg, username="tester"):
 @pytest.fixture()
 def client(tmp_path):
     (tmp_path / "bank.json").write_text(json.dumps(BANK))
-    cfg = tmp_path / "teach-me.toml"
+    cfg = tmp_path / "coach.toml"
     cfg.write_text(
         f'subject = "Test Subject"\nbank = "bank.json"\ndata_dir = "{tmp_path / "data"}"\n'
     )
@@ -156,7 +156,7 @@ def subject_client(tmp_path):
         {"id": 1, "question": "1 + 1?", "options": ["1", "2"], "correct": [1],
          "topics": ["Arithmetic"]},
     ]))
-    cfg = tmp_path / "teach-me.toml"
+    cfg = tmp_path / "coach.toml"
     cfg.write_text(
         f'data_dir = "{tmp_path / "data"}"\n'
         '[[subject]]\nname = "Big Exam"\nbank = "bank.json"\n'
@@ -207,13 +207,13 @@ def test_omitted_subject_defaults_to_first(subject_client):
 def test_index_served(client):
     res = client.get("/")
     assert res.status_code == 200
-    assert "teach-me" in res.text
+    assert "coach" in res.text
 
 
 @pytest.fixture()
 def anon_client(tmp_path):
     (tmp_path / "bank.json").write_text(json.dumps(BANK))
-    cfg = tmp_path / "teach-me.toml"
+    cfg = tmp_path / "coach.toml"
     cfg.write_text(
         f'subject = "Test Subject"\nbank = "bank.json"\ndata_dir = "{tmp_path / "data"}"\n'
     )
@@ -273,7 +273,7 @@ def test_login_and_logout(anon_client):
 
 def test_progress_is_per_user(tmp_path):
     (tmp_path / "bank.json").write_text(json.dumps(BANK))
-    cfg = tmp_path / "teach-me.toml"
+    cfg = tmp_path / "coach.toml"
     cfg.write_text(
         f'subject = "Test Subject"\nbank = "bank.json"\ndata_dir = "{tmp_path / "data"}"\n'
     )
@@ -291,11 +291,11 @@ def test_progress_is_per_user(tmp_path):
 
 def test_invite_code(tmp_path, monkeypatch):
     (tmp_path / "bank.json").write_text(json.dumps(BANK))
-    cfg = tmp_path / "teach-me.toml"
+    cfg = tmp_path / "coach.toml"
     cfg.write_text(
         f'subject = "Test Subject"\nbank = "bank.json"\ndata_dir = "{tmp_path / "data"}"\n'
     )
-    monkeypatch.setenv("TEACH_ME_INVITE_CODE", "sesame")
+    monkeypatch.setenv("COACH_INVITE_CODE", "sesame")
     client = TestClient(create_app(cfg))
 
     assert client.get("/api/auth").json()["invite_required"] is True
@@ -310,7 +310,7 @@ def test_invite_code(tmp_path, monkeypatch):
 
 def test_request_rate_limit(tmp_path):
     (tmp_path / "bank.json").write_text(json.dumps(BANK))
-    cfg = tmp_path / "teach-me.toml"
+    cfg = tmp_path / "coach.toml"
     cfg.write_text(
         f'subject = "Test Subject"\nbank = "bank.json"\ndata_dir = "{tmp_path / "data"}"\n'
         "[limits]\nrequests_per_minute = 3\n"
@@ -325,7 +325,7 @@ def test_request_rate_limit(tmp_path):
 
 def test_tutor_daily_budget(tmp_path):
     (tmp_path / "bank.json").write_text(json.dumps(BANK))
-    cfg = tmp_path / "teach-me.toml"
+    cfg = tmp_path / "coach.toml"
     cfg.write_text(
         f'subject = "Test Subject"\nbank = "bank.json"\ndata_dir = "{tmp_path / "data"}"\n'
         "[limits]\ntutor_per_day = 1\n"
@@ -352,7 +352,7 @@ def test_auth_attempts_are_throttled(anon_client):
 
 def test_sessions_survive_restart(tmp_path):
     (tmp_path / "bank.json").write_text(json.dumps(BANK))
-    cfg = tmp_path / "teach-me.toml"
+    cfg = tmp_path / "coach.toml"
     cfg.write_text(
         f'subject = "Test Subject"\nbank = "bank.json"\ndata_dir = "{tmp_path / "data"}"\n'
     )

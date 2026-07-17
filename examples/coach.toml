@@ -1,5 +1,5 @@
-# Example config. Copy this to `teach-me.toml` in your working directory and
-# edit it, or just run `python -m teach_me` to use this bundled example as-is.
+# Example config. Copy this to `coach.toml` in your working directory and
+# edit it, or just run `python -m coach` to use this bundled example as-is.
 #
 # Each [[subject]] is one thing you're studying — a certification, an exam
 # path, a course. You pick a subject when the app starts. A config with a

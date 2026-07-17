@@ -1,4 +1,4 @@
-# teach-me
+# coach
 
 Study tool that tracks your performance per topic, surfaces your weak spots, and gives you an LLM-powered tutor.
 
@@ -18,11 +18,11 @@ uv sync
 Run it in the browser:
 
 ```bash
-uv run python -m teach_me
+uv run python -m coach
 # then open http://127.0.0.1:8000
 ```
 
-It reads `teach-me.toml` from the current directory if there is one, and falls back to the bundled example subject and sample bank otherwise.
+It reads `coach.toml` from the current directory if there is one, and falls back to the bundled example subject and sample bank otherwise.
 
 ## The tutor works with any LLM
 
@@ -118,7 +118,7 @@ I prefer to use an LLM to generate the JSON bank. You can use a prompt like the 
 > exactly this format. Mix single- and multi-answer questions, give each a
 > concise `explanation`, and tag each with 1–3 `topics`. Return only the JSON.
 
-Save the result as your bank, point `teach-me.toml` at it, and you're off. Mistakes have happened for me though so always double check.
+Save the result as your bank, point `coach.toml` at it, and you're off. Mistakes have happened for me though so always double check.
 
 ## License
 

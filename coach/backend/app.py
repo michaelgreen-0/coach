@@ -16,7 +16,7 @@ from .services import tutor as tutor_service
 from .services.storage import load_bank
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "frontend" / "static"
-INVITE_ENV = "TEACH_ME_INVITE_CODE"
+INVITE_ENV = "COACH_INVITE_CODE"
 
 
 def create_app(config_path: Path | None = None) -> FastAPI:
@@ -47,7 +47,7 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         limiter=RateLimiter(),
     )
 
-    app = FastAPI(title="teach-me")
+    app = FastAPI(title="coach")
     app.state.app_state = app_state
 
     @app.exception_handler(StarletteHTTPException)

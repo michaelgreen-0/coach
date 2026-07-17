@@ -1,12 +1,12 @@
-from teach_me.backend.services.analytics import (
+from coach.backend.services.analytics import (
     coverage,
     overall_accuracy,
     progress_summary_text,
     topic_stats,
     weak_topics,
 )
-from teach_me.backend.core.models import Bank, Question
-from teach_me.backend.services.storage import Progress, QuestionProgress
+from coach.backend.core.models import Bank, Question
+from coach.backend.services.storage import Progress, QuestionProgress
 
 
 def _q(qid, topics):
