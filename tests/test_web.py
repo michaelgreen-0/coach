@@ -368,6 +368,24 @@ def test_tutor_daily_budget(tmp_path):
     assert "budget" in second.json()["error"]
 
 
+def test_tutor_global_budget_caps_all_users(tmp_path):
+    (tmp_path / "bank.json").write_text(json.dumps(BANK))
+    cfg = tmp_path / "coach.toml"
+    cfg.write_text(
+        f'subject = "Test Subject"\nbank = "bank.json"\ndata_dir = "{tmp_path / "data"}"\n'
+        "[limits]\ntutor_global_per_day = 1\n"
+        '[tutor]\nmodel = "stub"\nbase_url = "http://localhost:9/v1"\n'
+    )
+    # both users share one app (and one limiter); registering swaps the session cookie
+    client = _signed_in_client(cfg, "first")
+    assert client.post("/api/tutor", json={"message": "hi"}).status_code == 200
+    assert client.post("/api/register",
+                       json={"username": "second", "password": "password123"}).status_code == 200
+    res = client.post("/api/tutor", json={"message": "hi"})  # own per-user budget, but global is spent
+    assert res.status_code == 429
+    assert "busy" in res.json()["error"]
+
+
 def test_tutor_rejects_oversized_message(tmp_path):
     (tmp_path / "bank.json").write_text(json.dumps(BANK))
     cfg = tmp_path / "coach.toml"

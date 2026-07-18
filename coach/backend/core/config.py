@@ -24,9 +24,11 @@ class TutorConfig(BaseModel):
 class LimitsConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    # per signed-in user; the tutor cap is what protects your LLM bill
+    # per signed-in user; the tutor caps are what protect your LLM bill
     requests_per_minute: int = 120
     tutor_per_day: int = 50
+    tutor_per_ip_per_day: int = 100  # so throwaway accounts on one IP can't stack the per-user cap
+    tutor_global_per_day: int = 2000  # hard ceiling on the daily bill across everyone
 
 
 class _RawSubject(BaseModel):

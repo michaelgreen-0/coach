@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 
 from ..core.models import Err, Question
 from ..services import analytics, tutor
-from .deps import AppState, err, filtered_bank, get_current_user, get_state
+from .deps import AppState, client_ip, err, filtered_bank, get_current_user, get_state
 from .schemas import TutorRequest
 
 router = APIRouter(prefix="/api", tags=["tutor"])
@@ -25,7 +25,7 @@ def _bounded_history(history: list[dict]) -> list[dict]:
 
 
 @router.post("/tutor")
-def tutor_chat(req: TutorRequest, state: AppState = Depends(get_state),
+def tutor_chat(req: TutorRequest, request: Request, state: AppState = Depends(get_state),
                user: str = Depends(get_current_user)):
     cfg = state.cfg
     if not state.tutor_on:
@@ -50,8 +50,16 @@ def tutor_chat(req: TutorRequest, state: AppState = Depends(get_state),
             result = ("answered correctly" if req.correct
                       else f"answered incorrectly (picked {req.picked})")
 
+    # narrowest budget first, so a request a tighter cap rejects doesn't burn a broader slot
     if not state.limiter.allow(f"tutor:{user}", cfg.limits.tutor_per_day, 86400):
         return err("tutor budget used up for today — it resets over the next 24h",
+                   status=429)
+    if not state.limiter.allow(f"tutor:ip:{client_ip(request)}",
+                               cfg.limits.tutor_per_ip_per_day, 86400):
+        return err("tutor budget used up for today — it resets over the next 24h",
+                   status=429)
+    if not state.limiter.allow("tutor:global", cfg.limits.tutor_global_per_day, 86400):
+        return err("the tutor is unusually busy right now — please try again later",
                    status=429)
 
     up = state.user_progress(user, st)
