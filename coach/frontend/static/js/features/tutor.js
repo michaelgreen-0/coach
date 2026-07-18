@@ -44,6 +44,24 @@ export function closeTutor() {
   else show("menu");
 }
 
+const SENT = String.fromCharCode(0);
+const SENT_RE = new RegExp(SENT + "(\\d+)" + SENT, "g");
+
+function escapeHtml(s) {
+  return s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
+}
+
+function renderMarkdown(text) {
+  const code = [];
+  const stashed = escapeHtml(text).replace(/`([^`]+)`/g, (_, c) => {
+    code.push(c);
+    return SENT + (code.length - 1) + SENT;
+  });
+  return stashed
+    .replace(/\*\*([^\n]+?)\*\*/g, "<strong>$1</strong>")
+    .replace(SENT_RE, (_, i) => "<code>" + code[+i] + "</code>");
+}
+
 function chatMsg(who, cls) {
   const wrap = el("div", "msg " + cls);
   wrap.append(el("span", "msg-who", who + " ›"));
@@ -97,7 +115,7 @@ async function sendToTutor(text) {
     const { done, value } = await reader.read();
     if (done) break;
     full += decoder.decode(value, { stream: true });
-    body.textContent = full;
+    body.innerHTML = renderMarkdown(full);
     body.scrollIntoView({ block: "end" });
   }
   t.history.push({ role: "user", content: text });
