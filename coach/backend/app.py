@@ -11,7 +11,7 @@ from .api.deps import AppState, SubjectState
 from .core.config import load_config
 from .core.limits import RateLimiter
 from .core.models import Err
-from .core.security import SessionStore, UserStore
+from .core.security import Database, SessionStore, UserStore, migrate_json_files
 from .services import tutor as tutor_service
 from .services.storage import load_bank
 
@@ -41,12 +41,15 @@ def create_app(config_path: Path | None = None) -> FastAPI:
             by_id={q.id: q for q in bank_result.value.questions},
         )
 
+    db = Database(cfg.data_dir / "coach.db")
+    migrate_json_files(db, cfg.data_dir)
+
     app_state = AppState(
         cfg=cfg,
         states=states,
         default_slug=cfg.subjects[0].slug,
-        users=UserStore(cfg.data_dir / "users.json"),
-        sessions=SessionStore(cfg.data_dir / "sessions.json"),
+        users=UserStore(db),
+        sessions=SessionStore(db),
         invite_code=os.environ.get(INVITE_ENV, ""),
         secure_cookies=_env_flag(os.environ.get(SECURE_COOKIES_ENV)),
         tutor_on=cfg.tutor is not None and tutor_service.tutor_available(cfg.tutor),
