@@ -21,11 +21,11 @@ RUN uv sync --frozen --no-dev --no-install-project
 
 COPY --chown=app:app coach ./coach
 COPY --chown=app:app examples ./examples
+COPY --chown=app:app docker/entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
 
 RUN mkdir -p /app/data  # a fresh coach_data volume inherits app ownership from here
 
 EXPOSE 8000
 
-CMD ["uvicorn", "--factory", "coach.backend.app:create_app", \
-     "--host", "0.0.0.0", "--port", "8000", \
-     "--proxy-headers", "--forwarded-allow-ips", "*"]
+CMD ["./entrypoint.sh"]
