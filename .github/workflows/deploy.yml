@@ -73,8 +73,10 @@ jobs:
           DEPLOY_USER: ${{ vars.DEPLOY_USER }}
           # absolute path (or ~-relative) to the edge proxy's Caddyfile on the host
           EDGE_CADDYFILE: ${{ vars.EDGE_CADDYFILE }}
+          # public hostname the edge proxy serves this app on
+          PUBLIC_HOST: ${{ vars.PUBLIC_HOST }}
         run: |
-          ssh -i ~/.ssh/id_deploy "${DEPLOY_USER}@${DEPLOY_HOST}" 'bash -euo pipefail -s' "$EDGE_CADDYFILE" <<'REMOTE'
+          ssh -i ~/.ssh/id_deploy "${DEPLOY_USER}@${DEPLOY_HOST}" 'bash -euo pipefail -s' "$EDGE_CADDYFILE" "$PUBLIC_HOST" <<'REMOTE'
           cd ~/teach-me/docker
           docker compose build
           docker compose up -d
@@ -94,18 +96,21 @@ jobs:
           # so this never duplicates the block and never touches other site
           # configs; it self-heals if the edge Caddyfile was regenerated.
           CF="${1/#\~/$HOME}"   # EDGE_CADDYFILE, with any leading ~ resolved on the host
-          if [ -z "$CF" ]; then
-            echo "EDGE_CADDYFILE not set — skipping edge route registration"
-          elif ! grep -q 'example.com' "$CF"; then
+          HOST="$2"             # PUBLIC_HOST — the public hostname to route
+          if [ -z "$CF" ] || [ -z "$HOST" ]; then
+            echo "EDGE_CADDYFILE / PUBLIC_HOST not set — skipping edge route registration"
+          elif ! grep -q "$HOST" "$CF"; then
             cp -a "$CF" "$CF.bak.$(date +%Y%m%d-%H%M%S)"
-            printf '\nexample.com {\n\tencode gzip\n\theader Strict-Transport-Security "max-age=31536000"\n\treverse_proxy coach:8000 {\n\t\theader_up X-Forwarded-For {remote_host}\n\t}\n}\n' >> "$CF"
+            printf '\n%s {\n\tencode gzip\n\theader Strict-Transport-Security "max-age=31536000"\n\treverse_proxy coach:8000 {\n\t\theader_up X-Forwarded-For {remote_host}\n\t}\n}\n' "$HOST" >> "$CF"
             docker exec caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
             docker exec caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
           fi
           REMOTE
 
       - name: Smoke test the live URL
+        env:
+          PUBLIC_HOST: ${{ vars.PUBLIC_HOST }}
         run: |
-          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 https://example.com/api/subjects)
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "https://$PUBLIC_HOST/api/subjects")
           echo "GET /api/subjects -> $code"
           test "$code" = "200"
