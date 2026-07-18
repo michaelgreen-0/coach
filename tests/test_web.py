@@ -386,6 +386,21 @@ def test_tutor_global_budget_caps_all_users(tmp_path):
     assert "busy" in res.json()["error"]
 
 
+def test_tutor_stream_error_stays_generic(tmp_path):
+    # the tutor backend is unreachable (nothing on localhost:9), so the stream
+    # errors; the reply must not leak the host, exception text or a traceback
+    (tmp_path / "bank.json").write_text(json.dumps(BANK))
+    cfg = tmp_path / "coach.toml"
+    cfg.write_text(
+        f'subject = "Test Subject"\nbank = "bank.json"\ndata_dir = "{tmp_path / "data"}"\n'
+        '[tutor]\nmodel = "stub"\nbase_url = "http://localhost:9/v1"\n'
+    )
+    client = _signed_in_client(cfg)
+    body = client.post("/api/tutor", json={"message": "hi"}).text.lower()
+    for leak in ("localhost", "connection", "refused", "errno", "traceback", ":9"):
+        assert leak not in body
+
+
 def test_tutor_rejects_oversized_message(tmp_path):
     (tmp_path / "bank.json").write_text(json.dumps(BANK))
     cfg = tmp_path / "coach.toml"

@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 
@@ -5,6 +7,8 @@ from ..core.models import Err, Question
 from ..services import analytics, tutor
 from .deps import AppState, client_ip, err, filtered_bank, get_current_user, get_state
 from .schemas import TutorRequest
+
+logger = logging.getLogger("coach.tutor")
 
 router = APIRouter(prefix="/api", tags=["tutor"])
 
@@ -73,14 +77,16 @@ def tutor_chat(req: TutorRequest, request: Request, state: AppState = Depends(ge
         session = tutor.Tutor(cfg.tutor, st.subject.name, question=question,
                               result=result, progress_summary=summary,
                               reveal_answer=reveal)
-    except Exception as exc:  # constructing the client can fail (bad base_url, etc.)
-        return err(f"could not start tutor: {exc}", status=502)
+    except Exception:  # constructing the client can fail (bad base_url, etc.)
+        logger.exception("tutor setup failed for subject %s", st.subject.slug)
+        return err("could not reach the tutor right now — please try again", status=502)
     session.history = _bounded_history(req.history)
 
     def stream():
         try:
             yield from session.ask_stream(req.message)
-        except Exception as exc:  # network / API errors mid-chat are recoverable
-            yield f"\n\n[tutor error: {exc}]"
+        except Exception:  # network / API errors mid-chat are recoverable
+            logger.exception("tutor stream failed for user %s", user)
+            yield "\n\n[the tutor hit an error — please try again]"
 
     return StreamingResponse(stream(), media_type="text/plain; charset=utf-8")
