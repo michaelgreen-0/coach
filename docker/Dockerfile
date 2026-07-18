@@ -9,13 +9,20 @@ ENV UV_COMPILE_BYTECODE=1 \
     PYTHONPATH=/app \
     PYTHONUNBUFFERED=1
 
+# unprivileged runtime user; fixed uid/gid so the mounted data volume can be chowned to match
+RUN groupadd --system --gid 10001 app \
+    && useradd --system --uid 10001 --gid 10001 --create-home --home-dir /app app
 WORKDIR /app
+USER app
 
-COPY pyproject.toml uv.lock ./
+# build the venv as the app user so it isn't left root-owned
+COPY --chown=app:app pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 
-COPY coach ./coach
-COPY examples ./examples
+COPY --chown=app:app coach ./coach
+COPY --chown=app:app examples ./examples
+
+RUN mkdir -p /app/data  # a fresh coach_data volume inherits app ownership from here
 
 EXPOSE 8000
 
