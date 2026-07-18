@@ -1,0 +1,472 @@
+[
+  {
+    "id": 1,
+    "question": "A company needs highly durable object storage for infrequently accessed backups that must still be retrievable within milliseconds. Which S3 storage class is the best fit?",
+    "options": ["S3 Standard", "S3 Standard-IA", "S3 Glacier Deep Archive", "S3 One Zone-IA"],
+    "correct": [1],
+    "explanation": "S3 Standard-IA gives millisecond access at a lower storage cost for infrequently accessed data while keeping multi-AZ durability. Glacier Deep Archive has retrieval delays, and One Zone-IA sacrifices multi-AZ resilience.",
+    "topics": ["S3", "Storage"]
+  },
+  {
+    "id": 2,
+    "question": "Which two AWS services can distribute incoming traffic across multiple EC2 targets? (Choose two.)",
+    "options": ["Application Load Balancer", "Amazon Route 53", "AWS Global Accelerator", "Amazon CloudFront"],
+    "correct": [0, 2],
+    "explanation": "ALB distributes HTTP/HTTPS traffic across targets, and Global Accelerator routes traffic over the AWS backbone to endpoints including EC2/ALBs. Route 53 is DNS and CloudFront is a CDN — neither is a load balancer in the traditional sense.",
+    "topics": ["Networking", "Load Balancing"]
+  },
+  {
+    "id": 3,
+    "question": "You need a managed relational database that automatically scales compute capacity up and down based on load, including scaling to zero. Which option should you choose?",
+    "options": ["Amazon RDS Multi-AZ", "Amazon Aurora Serverless v2", "Amazon DynamoDB", "Amazon Redshift"],
+    "correct": [1],
+    "explanation": "Aurora Serverless automatically adjusts capacity based on demand. DynamoDB is NoSQL, Redshift is a data warehouse, and standard RDS does not auto-scale compute the same way.",
+    "topics": ["Databases", "Aurora"]
+  },
+  {
+    "id": 4,
+    "question": "A stateless web tier must scale automatically and survive an Availability Zone failure. Which combination provides this?",
+    "options": [
+      "A single large EC2 instance in one AZ",
+      "An Auto Scaling group spanning multiple AZs behind an ALB",
+      "EC2 instances in one AZ with Elastic IPs",
+      "A Spot Fleet in a single subnet"
+    ],
+    "correct": [1],
+    "explanation": "An Auto Scaling group across multiple AZs fronted by an ALB gives both elasticity and AZ-level fault tolerance. Single-AZ or single-instance designs cannot survive an AZ outage.",
+    "topics": ["High Availability", "Auto Scaling", "Compute"]
+  },
+  {
+    "id": 5,
+    "question": "Which AWS service lets you run containers without managing the underlying EC2 servers?",
+    "options": ["Amazon ECS on EC2", "AWS Fargate", "Amazon EKS self-managed nodes", "AWS Batch on EC2"],
+    "correct": [1],
+    "explanation": "Fargate is the serverless compute engine for containers, removing the need to provision or manage EC2 hosts. The other options require you to manage the instances.",
+    "topics": ["Containers", "Compute"]
+  },
+  {
+    "id": 6,
+    "question": "A design requires decoupling a producer from a consumer so that messages are processed asynchronously and retried on failure. Which service is most appropriate?",
+    "options": ["Amazon SNS", "Amazon SQS", "AWS Step Functions", "Amazon Kinesis Data Firehose"],
+    "correct": [1],
+    "explanation": "SQS is a message queue that decouples components and supports retries and dead-letter queues. SNS is pub/sub fan-out, not a durable work queue with per-message consumption.",
+    "topics": ["Messaging", "Decoupling"]
+  },
+  {
+    "id": 7,
+    "question": "Which two statements about a VPC security group are correct? (Choose two.)",
+    "options": [
+      "It is stateful — return traffic is automatically allowed",
+      "It can have both allow and deny rules",
+      "It operates at the instance/ENI level",
+      "It evaluates rules in numbered order and stops at the first match"
+    ],
+    "correct": [0, 2],
+    "explanation": "Security groups are stateful and apply at the ENI level. They only support allow rules (no explicit deny) and evaluate all rules — that ordered allow/deny behaviour describes NACLs.",
+    "topics": ["Networking", "VPC", "Security"]
+  },
+  {
+    "id": 8,
+    "question": "An application needs to store user session state that must be shared across a fleet of web servers with sub-millisecond latency. Which service fits best?",
+    "options": ["Amazon RDS", "Amazon ElastiCache for Redis", "Amazon S3", "Amazon EFS"],
+    "correct": [1],
+    "explanation": "ElastiCache for Redis provides an in-memory data store with sub-millisecond latency, ideal for shared session state. A relational database or object store would add unnecessary latency.",
+    "topics": ["Caching", "ElastiCache"]
+  },
+  {
+    "id": 9,
+    "question": "You must give an EC2 instance permission to read from an S3 bucket without embedding credentials. What is the recommended approach?",
+    "options": [
+      "Store an access key in the instance user data",
+      "Attach an IAM role to the instance via an instance profile",
+      "Hardcode credentials in the application config",
+      "Create an IAM user and put its keys in environment variables"
+    ],
+    "correct": [1],
+    "explanation": "Attaching an IAM role through an instance profile lets the instance obtain temporary rotating credentials automatically. Embedding long-lived keys anywhere is a security anti-pattern.",
+    "topics": ["IAM", "Security"]
+  },
+  {
+    "id": 10,
+    "question": "Which service provides a fully managed NoSQL database with single-digit millisecond performance and on-demand capacity?",
+    "options": ["Amazon DynamoDB", "Amazon RDS for PostgreSQL", "Amazon Neptune", "Amazon DocumentDB"],
+    "correct": [0],
+    "explanation": "DynamoDB is a fully managed key-value and document NoSQL database offering single-digit millisecond latency and on-demand or provisioned capacity modes.",
+    "topics": ["Databases", "DynamoDB"]
+  },
+  {
+    "id": 11,
+    "question": "A company wants to connect its on-premises data center to AWS with a private, consistent, high-bandwidth connection that does not traverse the public internet. Which service should it use?",
+    "options": ["Site-to-Site VPN", "AWS Direct Connect", "AWS Transit Gateway", "Internet Gateway"],
+    "correct": [1],
+    "explanation": "Direct Connect provides a dedicated private network link between on-premises and AWS with consistent bandwidth. A VPN runs over the public internet and offers less predictable performance.",
+    "topics": ["Networking", "Hybrid"]
+  },
+  {
+    "id": 12,
+    "question": "Which two features help protect against accidental deletion of objects in an S3 bucket? (Choose two.)",
+    "options": ["S3 Versioning", "S3 Transfer Acceleration", "MFA Delete", "S3 Intelligent-Tiering"],
+    "correct": [0, 2],
+    "explanation": "Versioning preserves prior versions when objects are overwritten or deleted, and MFA Delete requires a second factor to permanently remove versions. Transfer Acceleration and Intelligent-Tiering address speed and cost, not deletion protection.",
+    "topics": ["S3", "Data Protection"]
+  },
+  {
+    "id": 13,
+    "question": "An application running in a private subnet needs to download OS patches from the internet but must not be reachable from the internet. What should you deploy?",
+    "options": ["An Internet Gateway attached to the subnet", "A NAT Gateway in a public subnet", "An Egress-Only Internet Gateway", "A VPC peering connection"],
+    "correct": [1],
+    "explanation": "A NAT Gateway in a public subnet allows instances in private subnets to make outbound internet connections while blocking inbound connections. Egress-only gateways are for IPv6 only.",
+    "topics": ["Networking", "VPC"]
+  },
+  {
+    "id": 14,
+    "question": "Which AWS service lets you build serverless workflows that coordinate multiple Lambda functions with state, retries, and branching?",
+    "options": ["Amazon SQS", "AWS Step Functions", "Amazon EventBridge", "AWS AppSync"],
+    "correct": [1],
+    "explanation": "Step Functions orchestrates multi-step serverless workflows with built-in state, error handling, retries, and branching logic.",
+    "topics": ["Serverless", "Orchestration"]
+  },
+  {
+    "id": 15,
+    "question": "You want to serve static and dynamic content globally with low latency and reduce load on your origin. Which service is designed for this?",
+    "options": ["Amazon CloudFront", "AWS Global Accelerator", "Amazon Route 53", "Elastic Load Balancing"],
+    "correct": [0],
+    "explanation": "CloudFront is a CDN that caches content at edge locations worldwide, reducing latency and origin load. Global Accelerator improves network path but does not cache content.",
+    "topics": ["CloudFront", "Content Delivery"]
+  },
+  {
+    "id": 16,
+    "question": "Which storage service provides a shared, elastic file system that can be mounted concurrently by many Linux EC2 instances?",
+    "options": ["Amazon EBS", "Amazon S3", "Amazon EFS", "Instance Store"],
+    "correct": [2],
+    "explanation": "EFS is a managed NFS file system that scales elastically and can be mounted by thousands of instances simultaneously. EBS volumes generally attach to a single instance at a time.",
+    "topics": ["Storage", "EFS"]
+  },
+  {
+    "id": 17,
+    "question": "A workload can tolerate interruption and needs the lowest possible compute cost. Which EC2 purchasing option fits best?",
+    "options": ["On-Demand Instances", "Reserved Instances", "Spot Instances", "Dedicated Hosts"],
+    "correct": [2],
+    "explanation": "Spot Instances offer the deepest discount by using spare capacity, at the cost of possible interruption — ideal for fault-tolerant, flexible workloads.",
+    "topics": ["Compute", "Cost Optimization"]
+  },
+  {
+    "id": 18,
+    "question": "Which two AWS services can trigger an AWS Lambda function directly in response to an event? (Choose two.)",
+    "options": ["Amazon S3", "Amazon EBS", "Amazon API Gateway", "Amazon EC2 Auto Scaling"],
+    "correct": [0, 2],
+    "explanation": "S3 events (e.g. object created) and API Gateway requests can both invoke Lambda directly. EBS and Auto Scaling do not invoke Lambda as native event sources.",
+    "topics": ["Serverless", "Lambda"]
+  },
+  {
+    "id": 19,
+    "question": "A company needs to centrally manage and apply guardrail policies across many AWS accounts. Which service provides Service Control Policies?",
+    "options": ["AWS IAM", "AWS Organizations", "AWS Config", "AWS Control Tower"],
+    "correct": [1],
+    "explanation": "AWS Organizations provides Service Control Policies (SCPs) that set permission guardrails across member accounts. Control Tower builds on Organizations but the SCP mechanism itself belongs to Organizations.",
+    "topics": ["Governance", "Organizations"]
+  },
+  {
+    "id": 20,
+    "question": "Which database service is purpose-built for storing and querying highly connected graph data?",
+    "options": ["Amazon Neptune", "Amazon DynamoDB", "Amazon Aurora", "Amazon Redshift"],
+    "correct": [0],
+    "explanation": "Neptune is a managed graph database supporting property graph and RDF models — ideal for relationships like social networks or recommendation engines.",
+    "topics": ["Databases", "Neptune"]
+  },
+  {
+    "id": 21,
+    "question": "You need to encrypt data at rest in S3 and retain full control over the key material and its rotation. Which option gives you the most control while still being managed?",
+    "options": ["SSE-S3", "SSE-KMS with a customer managed key", "No encryption", "Client-side encryption with a hardcoded key"],
+    "correct": [1],
+    "explanation": "SSE-KMS with a customer managed key lets you control key policies, rotation, and auditing via CloudTrail while AWS manages the encryption operations. SSE-S3 uses AWS-managed keys with less control.",
+    "topics": ["Security", "Encryption", "KMS"]
+  },
+  {
+    "id": 22,
+    "question": "Which service should you use to collect, search, and analyze application and system logs from EC2 instances?",
+    "options": ["Amazon CloudWatch Logs", "AWS CloudTrail", "AWS Config", "Amazon Inspector"],
+    "correct": [0],
+    "explanation": "CloudWatch Logs ingests and lets you search application/system logs. CloudTrail records API activity, Config tracks resource configuration, and Inspector scans for vulnerabilities.",
+    "topics": ["Monitoring", "CloudWatch"]
+  },
+  {
+    "id": 23,
+    "question": "A read-heavy relational workload needs to offload reporting queries without impacting the primary. What is the simplest AWS solution?",
+    "options": [
+      "Create Amazon RDS Read Replicas",
+      "Enable Multi-AZ on the primary",
+      "Increase the instance size only",
+      "Migrate to a single larger Aurora writer"
+    ],
+    "correct": [0],
+    "explanation": "Read Replicas serve read/reporting traffic separately from the primary, scaling reads horizontally. Multi-AZ is for failover, not read scaling.",
+    "topics": ["Databases", "RDS", "Scaling"]
+  },
+  {
+    "id": 24,
+    "question": "Which AWS service records API calls made in your account for auditing and compliance?",
+    "options": ["Amazon CloudWatch", "AWS CloudTrail", "AWS Config", "AWS Trusted Advisor"],
+    "correct": [1],
+    "explanation": "CloudTrail logs who did what and when across AWS API activity, which is essential for auditing and security investigations.",
+    "topics": ["Security", "Auditing", "CloudTrail"]
+  },
+  {
+    "id": 25,
+    "question": "You must ensure a Lambda function can reach an RDS database that lives inside a private VPC subnet. What is required?",
+    "options": [
+      "Nothing — Lambda can reach any VPC by default",
+      "Configure the Lambda function with VPC settings (subnets and security groups)",
+      "Assign the database a public IP",
+      "Use an Internet Gateway on the database subnet"
+    ],
+    "correct": [1],
+    "explanation": "By default Lambda runs outside your VPC. To reach private resources you attach the function to the VPC by specifying subnets and security groups. Making the DB public would be insecure.",
+    "topics": ["Serverless", "Networking", "Lambda"]
+  },
+  {
+    "id": 26,
+    "question": "Which two services can be used as event sources for Amazon EventBridge rules? (Choose two.)",
+    "options": ["AWS service events (e.g. EC2 state change)", "Raw TCP packets", "Custom application events", "Direct EBS block reads"],
+    "correct": [0, 2],
+    "explanation": "EventBridge receives events from AWS services and from custom application event buses. It works at the event level, not raw network packets or block storage reads.",
+    "topics": ["Event-Driven", "EventBridge"]
+  },
+  {
+    "id": 27,
+    "question": "A solution requires that data in transit between clients and an ALB is encrypted. What must you configure?",
+    "options": [
+      "An HTTPS listener with an ACM certificate on the ALB",
+      "A NAT Gateway",
+      "S3 bucket encryption",
+      "A VPC endpoint"
+    ],
+    "correct": [0],
+    "explanation": "Terminating TLS on the ALB via an HTTPS listener with a certificate (commonly from AWS Certificate Manager) encrypts client-to-load-balancer traffic. The other options do not address in-transit encryption at the ALB.",
+    "topics": ["Security", "Load Balancing", "Encryption"]
+  },
+  {
+    "id": 28,
+    "question": "Which service provides a managed data warehouse optimized for complex analytical (OLAP) queries over petabytes of data?",
+    "options": ["Amazon Redshift", "Amazon RDS", "Amazon DynamoDB", "Amazon Aurora"],
+    "correct": [0],
+    "explanation": "Redshift is a columnar, MPP data warehouse built for large-scale OLAP analytics. RDS and Aurora are OLTP relational engines and DynamoDB is NoSQL.",
+    "topics": ["Analytics", "Redshift"]
+  },
+  {
+    "id": 29,
+    "question": "To reduce cost, a company wants EC2 discounts in exchange for a one- or three-year commitment to a consistent amount of compute usage measured in dollars per hour, with flexibility across instance families and regions. What should they choose?",
+    "options": ["Standard Reserved Instances", "Compute Savings Plans", "Spot Instances", "On-Demand Capacity Reservations"],
+    "correct": [1],
+    "explanation": "Compute Savings Plans give discounts for a committed hourly spend with flexibility across instance family, size, region, OS, and even Fargate/Lambda. Standard RIs are less flexible.",
+    "topics": ["Cost Optimization", "Compute"]
+  },
+  {
+    "id": 30,
+    "question": "Which two options improve the durability and availability of an application's data tier? (Choose two.)",
+    "options": [
+      "Enable RDS Multi-AZ deployment",
+      "Store the only copy of data on an instance store volume",
+      "Enable S3 Cross-Region Replication",
+      "Disable automated backups to save cost"
+    ],
+    "correct": [0, 2],
+    "explanation": "Multi-AZ provides a synchronous standby for failover, and Cross-Region Replication copies objects to another region for durability and DR. Instance stores are ephemeral and disabling backups reduces resilience.",
+    "topics": ["High Availability", "Data Protection"]
+  },
+  {
+    "id": 31,
+    "question": "An architecture uses API Gateway and Lambda. Traffic spikes cause throttling. Which is the most appropriate first step to smooth bursts and protect a downstream database?",
+    "options": [
+      "Put an SQS queue between the ingestion layer and the processing Lambda",
+      "Move everything onto a single EC2 instance",
+      "Remove API Gateway throttling entirely",
+      "Switch the database to instance store"
+    ],
+    "correct": [0],
+    "explanation": "Introducing an SQS queue buffers bursts and lets consumers process at a sustainable rate, protecting downstream systems. The other options either remove safeguards or reduce durability.",
+    "topics": ["Decoupling", "Serverless", "Scaling"]
+  },
+  {
+    "id": 32,
+    "question": "Which service allows private connectivity from your VPC to supported AWS services without traversing the public internet, using an interface endpoint?",
+    "options": ["AWS PrivateLink (VPC endpoints)", "Internet Gateway", "NAT Gateway", "AWS Direct Connect"],
+    "correct": [0],
+    "explanation": "AWS PrivateLink powers interface VPC endpoints, giving private access to AWS services and SaaS without an internet gateway or NAT. Direct Connect is for on-premises links.",
+    "topics": ["Networking", "VPC", "PrivateLink"]
+  },
+  {
+    "id": 33,
+    "question": "A global application needs a database with multi-region, active-active writes and automatic conflict resolution for a low-latency user experience worldwide. Which service is designed for this?",
+    "options": ["Amazon DynamoDB Global Tables", "Amazon RDS Multi-AZ", "Amazon Redshift", "Amazon ElastiCache"],
+    "correct": [0],
+    "explanation": "DynamoDB Global Tables provide multi-region, multi-active replication with built-in conflict resolution for globally distributed, low-latency access.",
+    "topics": ["Databases", "DynamoDB", "Global"]
+  },
+  {
+    "id": 34,
+    "question": "Which two are valid ways to grant cross-account access to an S3 bucket? (Choose two.)",
+    "options": [
+      "A bucket policy that grants access to the other account's principal",
+      "An IAM role in the bucket-owning account that the other account can assume",
+      "Making the bucket public to everyone",
+      "Sharing the root user password"
+    ],
+    "correct": [0, 1],
+    "explanation": "Cross-account access is safely granted via a resource-based bucket policy or by allowing a role assumption. Making the bucket public or sharing root credentials are insecure and incorrect.",
+    "topics": ["S3", "IAM", "Security"]
+  },
+  {
+    "id": 35,
+    "question": "You need near-real-time ingestion and processing of streaming data such as clickstreams, with the ability to have multiple consumers replay the stream. Which service fits?",
+    "options": ["Amazon Kinesis Data Streams", "Amazon SQS Standard", "Amazon SNS", "AWS Batch"],
+    "correct": [0],
+    "explanation": "Kinesis Data Streams supports real-time streaming with a retention window that lets multiple consumers read and replay records. SQS deletes messages once consumed and does not support replay the same way.",
+    "topics": ["Streaming", "Kinesis"]
+  },
+  {
+    "id": 36,
+    "question": "A company must meet a strict RPO of a few minutes and RTO of under an hour for a relational workload in a DR region, at reasonable cost. Which strategy is most appropriate?",
+    "options": ["Backup and restore only", "Pilot light or warm standby with cross-region replication", "Multi-site active-active", "No DR plan"],
+    "correct": [1],
+    "explanation": "A pilot light or warm standby keeps a minimal replicated environment ready, balancing cost against a low RPO/RTO. Backup-and-restore is cheaper but slower, and multi-site active-active is more costly than needed.",
+    "topics": ["Disaster Recovery", "High Availability"]
+  },
+  {
+    "id": 37,
+    "question": "Which service continuously assesses your AWS resources against best practices for cost, performance, security, fault tolerance, and service limits?",
+    "options": ["AWS Trusted Advisor", "Amazon Inspector", "AWS Config", "AWS CloudTrail"],
+    "correct": [0],
+    "explanation": "Trusted Advisor provides recommendations across cost optimization, performance, security, fault tolerance, and service quotas. Inspector focuses on workload vulnerabilities and Config on configuration compliance.",
+    "topics": ["Governance", "Cost Optimization"]
+  },
+  {
+    "id": 38,
+    "question": "To reduce latency for a DynamoDB read-heavy workload with repeated key lookups, which fully managed caching layer should you add?",
+    "options": ["DynamoDB Accelerator (DAX)", "ElastiCache for Memcached", "CloudFront", "S3 Transfer Acceleration"],
+    "correct": [0],
+    "explanation": "DAX is a DynamoDB-specific in-memory cache that delivers microsecond read latency with no application rewrite beyond the DAX client. It is purpose-built for DynamoDB.",
+    "topics": ["Databases", "DynamoDB", "Caching"]
+  },
+  {
+    "id": 39,
+    "question": "Which two statements about NACLs (network ACLs) are correct? (Choose two.)",
+    "options": [
+      "They are stateless",
+      "They are evaluated in rule-number order",
+      "They apply at the instance level",
+      "They only support allow rules"
+    ],
+    "correct": [0, 1],
+    "explanation": "NACLs are stateless (you must allow return traffic explicitly) and evaluate numbered rules in order, supporting both allow and deny. They apply at the subnet level, not the instance level.",
+    "topics": ["Networking", "VPC", "Security"]
+  },
+  {
+    "id": 40,
+    "question": "A batch job must run only when files land in an S3 bucket, scaling to zero when idle to minimize cost. Which design is most cost-effective?",
+    "options": [
+      "A permanently running EC2 instance polling the bucket",
+      "S3 event notification triggering a Lambda function",
+      "A cron job on a Reserved Instance",
+      "An Auto Scaling group with a minimum of 2 instances"
+    ],
+    "correct": [1],
+    "explanation": "S3 event notifications invoking Lambda run only when objects arrive and cost nothing while idle. Always-on EC2 or a minimum-size ASG incur cost even when there is no work.",
+    "topics": ["Serverless", "Cost Optimization", "Event-Driven"]
+  },
+  {
+    "id": 41,
+    "question": "Which service provides centralized management of secrets such as database credentials with automatic rotation?",
+    "options": ["AWS Secrets Manager", "AWS Systems Manager Parameter Store (Standard)", "Amazon S3", "AWS KMS"],
+    "correct": [0],
+    "explanation": "Secrets Manager stores secrets and supports built-in automatic rotation, including for RDS credentials. Parameter Store can hold secure strings but lacks native managed rotation, and KMS manages keys, not secrets lifecycle.",
+    "topics": ["Security", "Secrets Management"]
+  },
+  {
+    "id": 42,
+    "question": "An application serves users across continents and needs static IP addresses plus fast failover routing over the AWS global network to regional endpoints. Which service should you use?",
+    "options": ["AWS Global Accelerator", "Amazon CloudFront", "Amazon Route 53 latency routing alone", "Elastic Load Balancing"],
+    "correct": [0],
+    "explanation": "Global Accelerator provides two static anycast IPs and routes traffic over the AWS backbone with fast health-based failover to healthy regional endpoints. CloudFront caches content but is not designed for static-IP TCP/UDP acceleration.",
+    "topics": ["Networking", "Global Accelerator"]
+  },
+  {
+    "id": 43,
+    "question": "Which Route 53 routing policy would you use to send users to the region with the lowest network latency?",
+    "options": ["Simple routing", "Latency-based routing", "Failover routing", "Weighted routing"],
+    "correct": [1],
+    "explanation": "Latency-based routing directs users to the AWS region that provides the lowest latency for them. Weighted splits by proportion, failover handles active/passive, and simple has no such logic.",
+    "topics": ["Networking", "Route 53", "DNS"]
+  },
+  {
+    "id": 44,
+    "question": "A company wants to migrate a large on-premises NFS dataset (hundreds of TB) to S3 over an existing network link efficiently and with integrity checks. Which service is designed for this?",
+    "options": ["AWS DataSync", "AWS Snowball only", "Amazon EFS", "S3 Transfer Acceleration"],
+    "correct": [0],
+    "explanation": "DataSync automates and accelerates online transfers between on-premises storage and AWS with built-in integrity verification. Snowball is for offline/physical transfer, useful when the network is insufficient.",
+    "topics": ["Migration", "DataSync", "Storage"]
+  },
+  {
+    "id": 45,
+    "question": "Which two designs help an application meet a requirement of zero data loss (RPO of zero) for a relational database? (Choose two.)",
+    "options": [
+      "RDS Multi-AZ synchronous replication",
+      "Aurora with a synchronous storage layer across AZs",
+      "Nightly manual snapshots only",
+      "Storing the database on a single instance store volume"
+    ],
+    "correct": [0, 1],
+    "explanation": "RDS Multi-AZ replicates synchronously to a standby, and Aurora's storage layer synchronously replicates across three AZs — both target no committed-data loss on failover. Nightly snapshots and ephemeral instance store cannot meet an RPO of zero.",
+    "topics": ["Databases", "High Availability", "Disaster Recovery"]
+  },
+  {
+    "id": 46,
+    "question": "You want to enforce that all objects uploaded to an S3 bucket are encrypted, rejecting unencrypted PUTs. What is the cleanest approach?",
+    "options": [
+      "A bucket policy that denies PUTs lacking the encryption header",
+      "Turning off bucket versioning",
+      "Making the bucket private only",
+      "Enabling Transfer Acceleration"
+    ],
+    "correct": [0],
+    "explanation": "A bucket policy condition that denies uploads without the expected server-side encryption header enforces encryption at write time. (Default encryption also helps, but the policy actively rejects non-compliant requests.)",
+    "topics": ["S3", "Security", "Encryption"]
+  },
+  {
+    "id": 47,
+    "question": "Which compute option is best for a predictable, steady-state production workload running 24/7 for three years where cost minimization matters?",
+    "options": ["Spot Instances", "On-Demand Instances", "Reserved Instances or a Savings Plan", "Dedicated Hosts billed on-demand"],
+    "correct": [2],
+    "explanation": "For steady, long-running workloads, a 3-year Reserved Instance or Savings Plan provides the largest discount in exchange for commitment. Spot risks interruption and On-Demand is the most expensive for steady use.",
+    "topics": ["Cost Optimization", "Compute"]
+  },
+  {
+    "id": 48,
+    "question": "An architecture must fan out a single event to multiple independent subscribers (email, a queue, and a Lambda) simultaneously. Which service provides this pub/sub pattern?",
+    "options": ["Amazon SNS", "Amazon SQS", "Amazon Kinesis Data Firehose", "AWS Step Functions"],
+    "correct": [0],
+    "explanation": "SNS is a pub/sub service that fans out a message to many subscribers at once, including SQS queues, Lambda, HTTP endpoints, and email. SQS is point-to-point consumption.",
+    "topics": ["Messaging", "SNS", "Decoupling"]
+  },
+  {
+    "id": 49,
+    "question": "To meet compliance, log files in S3 must be immutable and undeletable for a fixed retention period, even by administrators. Which feature enforces this?",
+    "options": ["S3 Object Lock in compliance mode", "S3 Lifecycle policies", "S3 Versioning alone", "Bucket ACLs"],
+    "correct": [0],
+    "explanation": "S3 Object Lock in compliance mode enforces write-once-read-many (WORM) retention that even the root user cannot override until the period expires. Lifecycle and versioning alone do not provide immutability.",
+    "topics": ["S3", "Compliance", "Data Protection"]
+  },
+  {
+    "id": 50,
+    "question": "A three-tier application must isolate its database tier from the internet while allowing the web tier to reach it. Which VPC design achieves this?",
+    "options": [
+      "Place web tier in public subnets and database tier in private subnets, allowing traffic via security groups",
+      "Place all tiers in public subnets",
+      "Give the database an Elastic IP",
+      "Attach an Internet Gateway to the database subnet"
+    ],
+    "correct": [0],
+    "explanation": "Putting the web tier in public subnets and the database in private subnets, with security groups permitting only the web tier to reach the database, isolates the data tier from direct internet exposure.",
+    "topics": ["Networking", "VPC", "Security"]
+  }
+]

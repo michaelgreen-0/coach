@@ -10,7 +10,11 @@ from coach.backend.core.models import (
     parse_question,
 )
 
-SAMPLE_BANK = Path(__file__).resolve().parent.parent / "examples" / "sample-bank.json"
+SAMPLE_BANK = (
+    Path(__file__).resolve().parent.parent
+    / "examples"
+    / "aws-cloud-practitioner-bank.json"
+)
 
 
 def _q(**overrides):
@@ -99,6 +103,6 @@ def test_sample_bank_is_valid():
     assert isinstance(result, Ok), result
     bank = result.value
     assert isinstance(bank, Bank)
-    assert len(bank) == 10
-    assert "Astronomy" in bank.topics()
+    assert len(bank) == 50
+    assert "Cloud Concepts" in bank.topics()
     assert any(q.is_multi for q in bank.questions)

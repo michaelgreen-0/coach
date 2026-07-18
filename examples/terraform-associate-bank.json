@@ -1,0 +1,572 @@
+[
+  {
+    "id": 1,
+    "question": "What is the primary purpose of Terraform state?",
+    "options": [
+      "To map real-world resources to your configuration and track metadata",
+      "To store your provider credentials",
+      "To compile Terraform into a binary",
+      "To lint your HCL syntax"
+    ],
+    "correct": [0],
+    "explanation": "Terraform state maps resources defined in configuration to real infrastructure and stores metadata and dependencies, enabling Terraform to plan changes accurately.",
+    "topics": ["State", "Core Concepts"]
+  },
+  {
+    "id": 2,
+    "question": "Which command initializes a working directory, downloading providers and modules?",
+    "options": ["terraform init", "terraform plan", "terraform apply", "terraform validate"],
+    "correct": [0],
+    "explanation": "terraform init initializes the directory, installs provider plugins, downloads modules, and configures the backend. It must run before plan or apply.",
+    "topics": ["Workflow", "CLI"]
+  },
+  {
+    "id": 3,
+    "question": "Which two things does 'terraform plan' do? (Choose two.)",
+    "options": [
+      "Shows the actions Terraform will take to reach the desired state",
+      "Refreshes state to determine differences (by default)",
+      "Permanently modifies infrastructure",
+      "Uploads the state to Terraform Cloud automatically"
+    ],
+    "correct": [0, 1],
+    "explanation": "terraform plan compares desired configuration to current state (refreshing by default) and outputs the proposed changes without applying them. It does not modify infrastructure.",
+    "topics": ["Workflow", "Plan"]
+  },
+  {
+    "id": 4,
+    "question": "What does 'terraform apply' do when run without a saved plan file?",
+    "options": [
+      "Creates a new plan, shows it, and prompts for approval before making changes",
+      "Applies changes immediately with no plan",
+      "Only validates syntax",
+      "Destroys all resources"
+    ],
+    "correct": [0],
+    "explanation": "Without a saved plan, apply generates a plan, displays it, and asks for confirmation (unless -auto-approve is used) before provisioning changes.",
+    "topics": ["Workflow", "Apply"]
+  },
+  {
+    "id": 5,
+    "question": "Which file typically stores the state by default when using local state?",
+    "options": ["terraform.tfstate", "main.tf", "terraform.tfvars", "providers.tf"],
+    "correct": [0],
+    "explanation": "By default local state is stored in terraform.tfstate in the working directory (with a backup in terraform.tfstate.backup).",
+    "topics": ["State", "Files"]
+  },
+  {
+    "id": 6,
+    "question": "Why is a remote backend with state locking recommended for teams?",
+    "options": [
+      "It prevents concurrent operations from corrupting state",
+      "It makes Terraform run faster locally",
+      "It removes the need for providers",
+      "It encrypts your HCL source code"
+    ],
+    "correct": [0],
+    "explanation": "Remote backends (e.g. S3 with DynamoDB, or Terraform Cloud) support state locking so two people can't apply at the same time, preventing state corruption and providing shared access.",
+    "topics": ["Backends", "State"]
+  },
+  {
+    "id": 7,
+    "question": "Which two backends support state locking? (Choose two.)",
+    "options": ["S3 (with DynamoDB table)", "Terraform Cloud / remote backend", "local (no locking)", "A plain HTTP file server with no locking"],
+    "correct": [0, 1],
+    "explanation": "The S3 backend supports locking via a DynamoDB table, and Terraform Cloud/remote backends lock automatically. Local state and a plain file server do not provide locking.",
+    "topics": ["Backends", "State"]
+  },
+  {
+    "id": 8,
+    "question": "What does the 'terraform validate' command check?",
+    "options": [
+      "Whether the configuration is syntactically valid and internally consistent",
+      "Whether the infrastructure matches the real cloud",
+      "Whether your cloud credentials are correct",
+      "The cost of the resources"
+    ],
+    "correct": [0],
+    "explanation": "terraform validate checks that the configuration is syntactically valid and internally consistent, without accessing any remote services or state.",
+    "topics": ["Workflow", "CLI"]
+  },
+  {
+    "id": 9,
+    "question": "Which block is used to configure a specific cloud or service provider?",
+    "options": ["provider", "resource", "variable", "output"],
+    "correct": [0],
+    "explanation": "The provider block configures a provider (like aws or azurerm), including settings such as region or authentication.",
+    "topics": ["Configuration", "Providers"]
+  },
+  {
+    "id": 10,
+    "question": "How do you reference the value of another resource's attribute in HCL?",
+    "options": [
+      "Using interpolation like resource_type.name.attribute (e.g. aws_instance.web.id)",
+      "Using a global variable table",
+      "By hardcoding the value",
+      "You cannot reference other resources"
+    ],
+    "correct": [0],
+    "explanation": "Attributes are referenced with the address resource_type.name.attribute, which also creates an implicit dependency so Terraform orders operations correctly.",
+    "topics": ["Configuration", "References"]
+  },
+  {
+    "id": 11,
+    "question": "Which two ways can you create an explicit or implicit dependency between resources? (Choose two.)",
+    "options": [
+      "Reference one resource's attribute in another (implicit)",
+      "Use the depends_on meta-argument (explicit)",
+      "List resources alphabetically",
+      "Put resources in separate files"
+    ],
+    "correct": [0, 1],
+    "explanation": "Referencing an attribute creates an implicit dependency; depends_on declares an explicit one when there is no direct reference. File organization and ordering do not affect dependencies.",
+    "topics": ["Configuration", "Dependencies"]
+  },
+  {
+    "id": 12,
+    "question": "What is a Terraform module?",
+    "options": [
+      "A container for multiple resources used together, reusable and callable from other configurations",
+      "A single provider plugin",
+      "A state file",
+      "A CLI subcommand"
+    ],
+    "correct": [0],
+    "explanation": "A module is a reusable container of resources. Every configuration has a root module, and it can call child modules (local or from a registry) to organize and reuse code.",
+    "topics": ["Modules", "Reuse"]
+  },
+  {
+    "id": 13,
+    "question": "Which two sources can Terraform modules be loaded from? (Choose two.)",
+    "options": [
+      "The Terraform Registry",
+      "A Git repository",
+      "The state file",
+      "The provider binary"
+    ],
+    "correct": [0, 1],
+    "explanation": "Modules can be sourced from the public/private Terraform Registry, Git repos, local paths, HTTP URLs, and cloud buckets. State files and provider binaries are not module sources.",
+    "topics": ["Modules", "Sources"]
+  },
+  {
+    "id": 14,
+    "question": "Which block exposes a value from a module or configuration for use elsewhere or for display after apply?",
+    "options": ["output", "variable", "locals", "provider"],
+    "correct": [0],
+    "explanation": "output blocks expose values (e.g. an instance IP) after apply and pass data from child modules to the caller. variable defines inputs, and locals define internal named values.",
+    "topics": ["Configuration", "Outputs"]
+  },
+  {
+    "id": 15,
+    "question": "What is the precedence order (highest wins) for setting input variable values?",
+    "options": [
+      "Command-line -var / -var-file, then *.auto.tfvars, then terraform.tfvars, then environment variables, then defaults",
+      "Defaults always win",
+      "Environment variables always win over everything",
+      "terraform.tfvars always wins over the command line"
+    ],
+    "correct": [0],
+    "explanation": "Terraform loads variables in increasing precedence: environment variables (TF_VAR_), then terraform.tfvars, then *.auto.tfvars, then -var/-var-file on the command line (last on the command line wins). Explicit CLI flags have the highest precedence.",
+    "topics": ["Variables", "Configuration"]
+  },
+  {
+    "id": 16,
+    "question": "Which environment variable prefix sets a Terraform input variable?",
+    "options": ["TF_VAR_", "TERRAFORM_", "TF_", "VAR_"],
+    "correct": [0],
+    "explanation": "Setting an environment variable named TF_VAR_<name> provides a value for the input variable <name>.",
+    "topics": ["Variables", "Configuration"]
+  },
+  {
+    "id": 17,
+    "question": "What does the 'terraform fmt' command do?",
+    "options": [
+      "Rewrites configuration files to a canonical format and style",
+      "Formats the state file into JSON",
+      "Deletes unused resources",
+      "Applies formatting to the cloud infrastructure"
+    ],
+    "correct": [0],
+    "explanation": "terraform fmt rewrites .tf files to the canonical HashiCorp style for consistency and readability.",
+    "topics": ["Workflow", "CLI"]
+  },
+  {
+    "id": 18,
+    "question": "Which command shows the current state or a saved plan in human-readable form?",
+    "options": ["terraform show", "terraform output", "terraform graph", "terraform refresh"],
+    "correct": [0],
+    "explanation": "terraform show displays the contents of the state or a saved plan file in a readable format.",
+    "topics": ["CLI", "State"]
+  },
+  {
+    "id": 19,
+    "question": "What is the purpose of 'terraform destroy'?",
+    "options": [
+      "To remove all resources managed by the configuration",
+      "To delete the Terraform binary",
+      "To clear the plan cache only",
+      "To remove providers"
+    ],
+    "correct": [0],
+    "explanation": "terraform destroy tears down all resources tracked in the state for that configuration, prompting for confirmation unless -auto-approve is used.",
+    "topics": ["Workflow", "Destroy"]
+  },
+  {
+    "id": 20,
+    "question": "Which two statements about the 'count' meta-argument are correct? (Choose two.)",
+    "options": [
+      "It creates multiple instances of a resource based on a number",
+      "Instances are addressed with an index like resource[0]",
+      "It always requires a map input",
+      "It cannot be used with variables"
+    ],
+    "correct": [0, 1],
+    "explanation": "count creates N instances indexed from 0, addressed as resource[0], resource[1], etc. It uses a number (which can come from a variable). for_each is the one that uses a map or set.",
+    "topics": ["Configuration", "Meta-Arguments"]
+  },
+  {
+    "id": 21,
+    "question": "When should you prefer 'for_each' over 'count'?",
+    "options": [
+      "When creating multiple resources from a map or set where stable identity matters",
+      "Never — count is always better",
+      "Only when creating exactly one resource",
+      "When you want to ignore state entirely"
+    ],
+    "correct": [0],
+    "explanation": "for_each keys instances by a map/set key, so adding or removing items doesn't shift indexes and destroy/recreate unrelated resources the way count can. It's preferred when identity stability matters.",
+    "topics": ["Configuration", "Meta-Arguments"]
+  },
+  {
+    "id": 22,
+    "question": "What does the 'lifecycle' block argument 'prevent_destroy' do?",
+    "options": [
+      "Causes Terraform to error if a plan would destroy the resource",
+      "Automatically recreates the resource",
+      "Prevents the resource from being created",
+      "Skips the resource during apply"
+    ],
+    "correct": [0],
+    "explanation": "prevent_destroy = true makes Terraform reject any plan that would destroy that resource, guarding critical infrastructure from accidental deletion.",
+    "topics": ["Configuration", "Lifecycle"]
+  },
+  {
+    "id": 23,
+    "question": "Which two lifecycle meta-arguments exist in a resource's lifecycle block? (Choose two.)",
+    "options": ["create_before_destroy", "ignore_changes", "auto_approve", "refresh_only"],
+    "correct": [0, 1],
+    "explanation": "create_before_destroy and ignore_changes (and prevent_destroy) are lifecycle arguments. auto_approve and refresh_only are CLI flags, not lifecycle settings.",
+    "topics": ["Configuration", "Lifecycle"]
+  },
+  {
+    "id": 24,
+    "question": "What does 'terraform state list' do?",
+    "options": [
+      "Lists the resources tracked in the current state",
+      "Lists available providers",
+      "Lists all modules in the registry",
+      "Lists planned changes"
+    ],
+    "correct": [0],
+    "explanation": "terraform state list shows the addresses of resources currently recorded in state, useful for inspection and for targeting state operations.",
+    "topics": ["State", "CLI"]
+  },
+  {
+    "id": 25,
+    "question": "You renamed a resource in configuration and don't want Terraform to destroy and recreate it. Which command updates state to the new address?",
+    "options": ["terraform state mv", "terraform state rm", "terraform import", "terraform taint"],
+    "correct": [0],
+    "explanation": "terraform state mv moves an existing resource in state to a new address (e.g. after a rename), avoiding destroy/recreate. rm removes from state, and import brings existing infra under management.",
+    "topics": ["State", "CLI"]
+  },
+  {
+    "id": 26,
+    "question": "What does 'terraform import' accomplish?",
+    "options": [
+      "Brings an existing real-world resource under Terraform management by adding it to state",
+      "Generates the full HCL configuration automatically for you",
+      "Copies a module from the registry",
+      "Imports variables from a file"
+    ],
+    "correct": [0],
+    "explanation": "terraform import associates an existing resource with a Terraform resource address in state. You still write the matching configuration yourself (import does not generate it in the classic workflow).",
+    "topics": ["State", "Import"]
+  },
+  {
+    "id": 27,
+    "question": "Which two are valid Terraform variable types? (Choose two.)",
+    "options": ["list(string)", "map(number)", "table", "record"],
+    "correct": [0, 1],
+    "explanation": "Terraform supports primitive types (string, number, bool) and complex types like list, set, map, object, and tuple. 'table' and 'record' are not Terraform types.",
+    "topics": ["Variables", "Types"]
+  },
+  {
+    "id": 28,
+    "question": "What is the purpose of a 'data' source block?",
+    "options": [
+      "To read information about existing resources or external data without managing them",
+      "To create new resources",
+      "To store the state",
+      "To define output values"
+    ],
+    "correct": [0],
+    "explanation": "Data sources fetch read-only information (e.g. an existing AMI ID or VPC) so your configuration can reference infrastructure it does not manage.",
+    "topics": ["Configuration", "Data Sources"]
+  },
+  {
+    "id": 29,
+    "question": "Which two benefits does using variables and modules provide? (Choose two.)",
+    "options": [
+      "Reusability across environments",
+      "Reduced duplication (DRY configuration)",
+      "Automatic cost reduction of cloud resources",
+      "Elimination of the need for providers"
+    ],
+    "correct": [0, 1],
+    "explanation": "Variables and modules promote reuse and reduce duplication, making configurations maintainable across environments. They don't reduce cloud costs by themselves or remove the need for providers.",
+    "topics": ["Modules", "Best Practices"]
+  },
+  {
+    "id": 30,
+    "question": "How do you mark a variable so that Terraform hides its value in CLI output and logs?",
+    "options": ["Set sensitive = true on the variable", "Prefix its name with an underscore", "Put it in a .secret file", "Use uppercase letters"],
+    "correct": [0],
+    "explanation": "Declaring a variable (or output) with sensitive = true prevents Terraform from displaying its value in plan/apply output, reducing accidental exposure.",
+    "topics": ["Variables", "Security"]
+  },
+  {
+    "id": 31,
+    "question": "Which two statements about provider version constraints are correct? (Choose two.)",
+    "options": [
+      "You can pin versions using the required_providers block in terraform settings",
+      "The .terraform.lock.hcl file records the selected provider versions and hashes",
+      "Version constraints are ignored by terraform init",
+      "Providers cannot be versioned"
+    ],
+    "correct": [0, 1],
+    "explanation": "required_providers specifies source and version constraints, and the dependency lock file (.terraform.lock.hcl) records the exact selected versions and checksums for reproducibility. init honors these.",
+    "topics": ["Providers", "Versioning"]
+  },
+  {
+    "id": 32,
+    "question": "What does the dependency lock file (.terraform.lock.hcl) ensure?",
+    "options": [
+      "Consistent provider versions across runs and team members",
+      "That state is encrypted",
+      "That the plan is auto-approved",
+      "That variables are validated"
+    ],
+    "correct": [0],
+    "explanation": "The lock file pins provider versions and their checksums so every init installs the same providers, ensuring reproducible builds across machines and CI.",
+    "topics": ["Providers", "Versioning"]
+  },
+  {
+    "id": 33,
+    "question": "Which command can you use to reduce risk by applying changes to only a specific resource?",
+    "options": [
+      "terraform apply -target=resource_address",
+      "terraform apply -only",
+      "terraform plan -single",
+      "terraform focus"
+    ],
+    "correct": [0],
+    "explanation": "The -target flag limits an operation to the specified resource(s) and their dependencies. It's meant for exceptional cases, not routine use.",
+    "topics": ["CLI", "Workflow"]
+  },
+  {
+    "id": 34,
+    "question": "What is a Terraform workspace primarily used for?",
+    "options": [
+      "Managing multiple distinct state files (e.g. dev/prod) with the same configuration",
+      "Storing provider credentials",
+      "Formatting code",
+      "Downloading modules"
+    ],
+    "correct": [0],
+    "explanation": "Workspaces let a single configuration maintain multiple named states (like dev, staging, prod), each isolated. The default workspace is named 'default'.",
+    "topics": ["Workspaces", "State"]
+  },
+  {
+    "id": 35,
+    "question": "Which two are true about Terraform Cloud/Enterprise? (Choose two.)",
+    "options": [
+      "It can run Terraform operations remotely and store state",
+      "It provides features like Sentinel policy-as-code and a private module registry",
+      "It replaces the need to write any HCL",
+      "It only works with AWS"
+    ],
+    "correct": [0, 1],
+    "explanation": "Terraform Cloud/Enterprise offers remote runs, remote state storage, VCS integration, a private module registry, and policy-as-code (Sentinel/OPA). You still author HCL, and it is cloud-agnostic.",
+    "topics": ["Terraform Cloud", "Governance"]
+  },
+  {
+    "id": 36,
+    "question": "Which construct lets you define local named values to avoid repeating expressions?",
+    "options": ["locals block", "variable block", "output block", "provider block"],
+    "correct": [0],
+    "explanation": "The locals block defines named values computed from expressions, referenced as local.name, reducing repetition. Unlike variables, locals cannot be set externally.",
+    "topics": ["Configuration", "Locals"]
+  },
+  {
+    "id": 37,
+    "question": "What does 'terraform refresh' (or the refresh step) do?",
+    "options": [
+      "Updates the state file to match the real-world infrastructure",
+      "Deletes and recreates all resources",
+      "Downloads new providers",
+      "Reformats the configuration"
+    ],
+    "correct": [0],
+    "explanation": "Refresh reconciles the state with actual infrastructure by querying providers. It's part of plan/apply by default; the standalone command is now 'terraform apply -refresh-only'.",
+    "topics": ["State", "CLI"]
+  },
+  {
+    "id": 38,
+    "question": "You want to force a resource to be destroyed and recreated on the next apply. Which is the current recommended approach?",
+    "options": [
+      "terraform apply -replace=resource_address",
+      "Delete the state file",
+      "Edit terraform.tfstate by hand",
+      "Run terraform fmt"
+    ],
+    "correct": [0],
+    "explanation": "terraform apply -replace=ADDRESS forces recreation of a specific resource. This replaced the deprecated 'terraform taint' command. Editing state by hand is risky and discouraged.",
+    "topics": ["CLI", "Workflow"]
+  },
+  {
+    "id": 39,
+    "question": "Which two provisioners does Terraform support (as a last resort)? (Choose two.)",
+    "options": ["local-exec", "remote-exec", "cloud-exec", "state-exec"],
+    "correct": [0, 1],
+    "explanation": "Terraform supports local-exec (run a command on the machine running Terraform) and remote-exec (run on the remote resource). HashiCorp advises using provisioners only as a last resort.",
+    "topics": ["Provisioners", "Configuration"]
+  },
+  {
+    "id": 40,
+    "question": "Why does HashiCorp recommend against relying on provisioners?",
+    "options": [
+      "They are not tracked in state and can make configurations brittle and non-idempotent",
+      "They are illegal to use",
+      "They cost extra money per run",
+      "They only work on Windows"
+    ],
+    "correct": [0],
+    "explanation": "Provisioner actions aren't represented in Terraform state, so Terraform can't track or reconcile them, leading to brittle, non-idempotent behavior. Native providers or config management tools are preferred.",
+    "topics": ["Provisioners", "Best Practices"]
+  },
+  {
+    "id": 41,
+    "question": "Which HCL construct dynamically generates repeated nested configuration blocks?",
+    "options": ["dynamic block", "for_each on the resource only", "count only", "a provisioner"],
+    "correct": [0],
+    "explanation": "A dynamic block generates repeatable nested blocks (like multiple ingress rules) by iterating over a collection, keeping configuration concise.",
+    "topics": ["Configuration", "Dynamic Blocks"]
+  },
+  {
+    "id": 42,
+    "question": "What is the effect of the 'ignore_changes' lifecycle argument?",
+    "options": [
+      "Terraform ignores changes to the specified attributes after creation",
+      "Terraform ignores the whole resource",
+      "Terraform deletes the attribute",
+      "Terraform recreates the resource on every apply"
+    ],
+    "correct": [0],
+    "explanation": "ignore_changes tells Terraform not to revert external modifications to listed attributes, useful when another process manages certain fields (like an autoscaling-managed instance count).",
+    "topics": ["Configuration", "Lifecycle"]
+  },
+  {
+    "id": 43,
+    "question": "Which two statements about sensitive data in Terraform state are correct? (Choose two.)",
+    "options": [
+      "State can contain sensitive values in plain text",
+      "You should protect state with encryption and access controls (e.g. remote backend)",
+      "State never contains secrets",
+      "Marking a variable sensitive removes it from state"
+    ],
+    "correct": [0, 1],
+    "explanation": "State files may store secrets in plain text, so they must be protected via secure remote backends with encryption and restricted access. The sensitive flag only hides values in CLI output, not in state.",
+    "topics": ["State", "Security"]
+  },
+  {
+    "id": 44,
+    "question": "Which command produces a visual dependency graph of resources?",
+    "options": ["terraform graph", "terraform show", "terraform plan", "terraform state list"],
+    "correct": [0],
+    "explanation": "terraform graph outputs a DOT-format dependency graph that can be rendered to visualize resource relationships.",
+    "topics": ["CLI", "Dependencies"]
+  },
+  {
+    "id": 45,
+    "question": "What happens if you run 'terraform apply' and the real infrastructure has drifted from state?",
+    "options": [
+      "Terraform detects the drift during the refresh/plan and proposes changes to reconcile it",
+      "Terraform ignores drift entirely",
+      "Terraform deletes the state",
+      "Terraform refuses to run"
+    ],
+    "correct": [0],
+    "explanation": "During plan, Terraform refreshes state against reality, detects drift, and proposes actions to bring infrastructure back in line with the configuration.",
+    "topics": ["State", "Drift"]
+  },
+  {
+    "id": 46,
+    "question": "Which two are valid ways to authenticate a provider like AWS? (Choose two.)",
+    "options": [
+      "Environment variables (e.g. AWS_ACCESS_KEY_ID)",
+      "Shared credentials/config files or IAM roles",
+      "Hardcoding keys directly in committed .tf files",
+      "There is no way to authenticate providers"
+    ],
+    "correct": [0, 1],
+    "explanation": "Providers commonly authenticate via environment variables, shared credential files, or instance/assumed IAM roles. Hardcoding secrets in version-controlled configuration is insecure and discouraged.",
+    "topics": ["Providers", "Security"]
+  },
+  {
+    "id": 47,
+    "question": "What is the recommended way to reuse a module across multiple environments with different settings?",
+    "options": [
+      "Pass different input variable values when calling the module in each environment",
+      "Copy and paste the module for each environment",
+      "Hardcode values inside the module",
+      "Use one global state for everything"
+    ],
+    "correct": [0],
+    "explanation": "A well-designed module exposes input variables so the same module can be instantiated with different values per environment, avoiding duplication.",
+    "topics": ["Modules", "Best Practices"]
+  },
+  {
+    "id": 48,
+    "question": "Which two commands are part of the standard core Terraform provisioning workflow? (Choose two.)",
+    "options": ["terraform plan", "terraform apply", "terraform compile", "terraform deploy"],
+    "correct": [0, 1],
+    "explanation": "The core workflow is init, plan, and apply (and destroy to tear down). There are no 'terraform compile' or 'terraform deploy' commands.",
+    "topics": ["Workflow", "CLI"]
+  },
+  {
+    "id": 49,
+    "question": "What does a variable 'validation' block enable?",
+    "options": [
+      "Custom rules that check a variable's value and produce an error if not met",
+      "Encryption of the variable",
+      "Automatic type conversion only",
+      "Skipping the variable"
+    ],
+    "correct": [0],
+    "explanation": "A validation block inside a variable declaration lets you define a condition and error message to enforce constraints (e.g. a value must be in an allowed list) at plan time.",
+    "topics": ["Variables", "Configuration"]
+  },
+  {
+    "id": 50,
+    "question": "Which statement about Terraform's approach to infrastructure is correct?",
+    "options": [
+      "It is declarative — you describe the desired end state and Terraform determines how to achieve it",
+      "It is purely imperative — you script each step",
+      "It only works with a single cloud provider",
+      "It cannot manage existing infrastructure"
+    ],
+    "correct": [0],
+    "explanation": "Terraform is declarative: you define the desired state and Terraform builds a plan to reach it. It is cloud-agnostic through providers and can manage existing resources via import.",
+    "topics": ["Core Concepts", "IaC"]
+  }
+]

@@ -1,0 +1,557 @@
+[
+  {
+    "id": 1,
+    "question": "What is the default execution context for Apex code regarding data access?",
+    "options": [
+      "System context — object and field permissions are ignored unless 'with sharing' or enforcement is added",
+      "User context — always respects the running user's permissions",
+      "Guest context",
+      "Read-only context"
+    ],
+    "correct": [0],
+    "explanation": "By default Apex runs in system context, ignoring the current user's CRUD/FLS and sharing. Developers add 'with sharing' and explicit CRUD/FLS enforcement (e.g. WITH SECURITY_ENFORCED or Security.stripInaccessible) to respect user permissions.",
+    "topics": ["Apex", "Security"]
+  },
+  {
+    "id": 2,
+    "question": "What is the governor limit for the maximum number of SOQL queries in a single synchronous Apex transaction?",
+    "options": ["100", "150", "50", "200"],
+    "correct": [0],
+    "explanation": "Synchronous Apex allows up to 100 SOQL queries per transaction (asynchronous allows 200). Exceeding it throws a limit exception.",
+    "topics": ["Apex", "Governor Limits"]
+  },
+  {
+    "id": 3,
+    "question": "Which two practices help Apex code avoid hitting governor limits? (Choose two.)",
+    "options": [
+      "Bulkify code to handle collections of records",
+      "Move SOQL and DML outside of loops",
+      "Place SOQL queries inside for loops for clarity",
+      "Use one DML statement per record"
+    ],
+    "correct": [0, 1],
+    "explanation": "Bulkifying and keeping SOQL/DML out of loops are essential to stay within governor limits. Querying or performing DML inside loops quickly exceeds them.",
+    "topics": ["Apex", "Best Practices"]
+  },
+  {
+    "id": 4,
+    "question": "In a before-insert trigger, how should you modify a field value on the records being inserted?",
+    "options": [
+      "Set the value directly on records in Trigger.new — no DML needed",
+      "Perform an update DML on Trigger.new",
+      "Query the records first then update them",
+      "Use Trigger.old to set the value"
+    ],
+    "correct": [0],
+    "explanation": "In before triggers you can modify Trigger.new records directly and the platform saves those values automatically — calling DML would cause a recursive error. Trigger.old is not available in insert triggers.",
+    "topics": ["Apex", "Triggers"]
+  },
+  {
+    "id": 5,
+    "question": "Which trigger context variable holds the previous version of records in an update trigger?",
+    "options": ["Trigger.old / Trigger.oldMap", "Trigger.new", "Trigger.newMap", "Trigger.isBefore"],
+    "correct": [0],
+    "explanation": "Trigger.old (and Trigger.oldMap) contain the prior field values of records in update and delete triggers. Trigger.new holds the new versions.",
+    "topics": ["Apex", "Triggers"]
+  },
+  {
+    "id": 6,
+    "question": "What is the minimum code coverage required to deploy Apex to a production org?",
+    "options": ["75% overall", "100% of every class", "50%", "90%"],
+    "correct": [0],
+    "explanation": "Deploying to production requires at least 75% overall Apex code coverage, and every trigger must have at least some coverage. Higher is recommended for quality.",
+    "topics": ["Testing", "Deployment"]
+  },
+  {
+    "id": 7,
+    "question": "Which annotation marks a method as a test method in Apex?",
+    "options": ["@isTest", "@future", "@AuraEnabled", "@testSetup only"],
+    "correct": [0],
+    "explanation": "@isTest marks a class or method as test code that does not count against org code size and can run in a test context. @testSetup is used for shared test data setup, not to mark a test method.",
+    "topics": ["Testing", "Apex"]
+  },
+  {
+    "id": 8,
+    "question": "Which two are true about Test.startTest() and Test.stopTest()? (Choose two.)",
+    "options": [
+      "Code between them gets a fresh set of governor limits",
+      "Asynchronous calls made before stopTest() execute synchronously when stopTest() is called",
+      "They permanently commit data to the database",
+      "They disable all assertions"
+    ],
+    "correct": [0, 1],
+    "explanation": "startTest/stopTest give the enclosed code a fresh set of governor limits and force queued async operations (like @future) to complete at stopTest(), so you can assert on their results. Test data is rolled back after the test.",
+    "topics": ["Testing", "Apex"]
+  },
+  {
+    "id": 9,
+    "question": "Which interface must a class implement to be run as a Batch Apex job?",
+    "options": ["Database.Batchable", "Schedulable", "Queueable", "Comparable"],
+    "correct": [0],
+    "explanation": "Batch Apex classes implement Database.Batchable<sObject> with start, execute, and finish methods to process large data volumes in chunks.",
+    "topics": ["Apex", "Asynchronous"]
+  },
+  {
+    "id": 10,
+    "question": "Which asynchronous Apex option supports chaining jobs and passing complex types (like sObjects) to the job?",
+    "options": ["Queueable Apex", "@future methods", "Batch Apex only", "Scheduled Apex only"],
+    "correct": [0],
+    "explanation": "Queueable Apex supports job chaining and non-primitive member variables (like sObjects and collections). @future methods only accept primitive parameters and cannot be chained.",
+    "topics": ["Apex", "Asynchronous"]
+  },
+  {
+    "id": 11,
+    "question": "Which two limitations apply to @future methods? (Choose two.)",
+    "options": [
+      "They can only take primitive data types (or collections of primitives) as parameters",
+      "They cannot be called from a batch class's execute in an unlimited way (limited number)",
+      "They can return a value to the caller",
+      "They run synchronously"
+    ],
+    "correct": [0, 1],
+    "explanation": "@future methods accept only primitives/collections of primitives, must be void (no return value), run asynchronously, and have limits on how many can be invoked. Chaining and complex parameters are not supported.",
+    "topics": ["Apex", "Asynchronous"]
+  },
+  {
+    "id": 12,
+    "question": "In SOQL, which clause retrieves child records related to a parent in a single query?",
+    "options": [
+      "A nested subquery on the child relationship name, e.g. SELECT Name, (SELECT Id FROM Contacts) FROM Account",
+      "A JOIN keyword",
+      "A UNION clause",
+      "A GROUP BY clause"
+    ],
+    "correct": [0],
+    "explanation": "SOQL uses parent-to-child relationship subqueries, e.g. (SELECT ... FROM Contacts), rather than SQL-style JOINs, to return child records with the parent.",
+    "topics": ["SOQL", "Data"]
+  },
+  {
+    "id": 13,
+    "question": "How do you traverse from a child record to a parent field in SOQL?",
+    "options": [
+      "Using dot notation on the relationship, e.g. SELECT Account.Name FROM Contact",
+      "Using an inner JOIN",
+      "Using a subquery on the parent",
+      "It is not possible in SOQL"
+    ],
+    "correct": [0],
+    "explanation": "Child-to-parent traversal uses dot notation across the relationship field, e.g. Contact.Account.Name, up to five levels.",
+    "topics": ["SOQL", "Data"]
+  },
+  {
+    "id": 14,
+    "question": "Which two statements about SOQL and SOSL are correct? (Choose two.)",
+    "options": [
+      "SOSL can search across multiple objects at once",
+      "SOQL queries one object (and its relationships) per statement",
+      "SOSL returns exact database records only, never text matches",
+      "SOQL is used for full-text search across all fields"
+    ],
+    "correct": [0, 1],
+    "explanation": "SOSL performs full-text searches across multiple objects and fields; SOQL queries a single object graph with precise filters. SOQL is not full-text search across everything.",
+    "topics": ["SOQL", "SOSL"]
+  },
+  {
+    "id": 15,
+    "question": "Which DML statement inserts new records or updates existing ones based on an ID or external ID match?",
+    "options": ["upsert", "insert", "merge", "undelete"],
+    "correct": [0],
+    "explanation": "The upsert DML operation matches on the record ID or a specified external ID field, updating matches and inserting the rest.",
+    "topics": ["Apex", "DML"]
+  },
+  {
+    "id": 16,
+    "question": "When a DML operation on a list of records partially fails, which method allows the successful records to still commit?",
+    "options": [
+      "Database.insert(records, false) with allOrNone set to false",
+      "insert records; (standard DML)",
+      "System.assert()",
+      "Test.startTest()"
+    ],
+    "correct": [0],
+    "explanation": "Database methods like Database.insert with allOrNone=false allow partial success, returning SaveResult objects to inspect per-record outcomes. Standard DML rolls back all records on any failure.",
+    "topics": ["Apex", "DML", "Error Handling"]
+  },
+  {
+    "id": 17,
+    "question": "Which two are valid ways to enforce field-level security in Apex when reading data? (Choose two.)",
+    "options": [
+      "Use WITH SECURITY_ENFORCED in the SOQL query",
+      "Use Security.stripInaccessible() on the results",
+      "Rely on the default system context to enforce it automatically",
+      "Add 'with sharing' to the class"
+    ],
+    "correct": [0, 1],
+    "explanation": "WITH SECURITY_ENFORCED and Security.stripInaccessible enforce CRUD/FLS. 'with sharing' only enforces record-level sharing, not FLS, and system context does not enforce FLS automatically.",
+    "topics": ["Apex", "Security"]
+  },
+  {
+    "id": 18,
+    "question": "What is the correct way to reference a custom label in Apex or a formula?",
+    "options": [
+      "System.Label.LabelName in Apex",
+      "It cannot be referenced in code",
+      "Only in Visualforce, never Apex",
+      "Label = 'text' inline"
+    ],
+    "correct": [0],
+    "explanation": "Custom labels are referenced as System.Label.LabelName in Apex (and $Label.LabelName in Visualforce/formulas), enabling translation and centralized text management.",
+    "topics": ["Apex", "Customization"]
+  },
+  {
+    "id": 19,
+    "question": "Which Lightning Web Component decorator is used to expose a public property that a parent component can set?",
+    "options": ["@api", "@track", "@wire", "@AuraEnabled"],
+    "correct": [0],
+    "explanation": "In LWC, @api marks public reactive properties and methods that parent components can access. @track is for private reactive fields and @wire reads Salesforce data.",
+    "topics": ["Lightning Web Components", "UI"]
+  },
+  {
+    "id": 20,
+    "question": "Which two decorators are used in Lightning Web Components? (Choose two.)",
+    "options": ["@wire", "@track", "@future", "@isTest"],
+    "correct": [0, 1],
+    "explanation": "@wire (to read data/records reactively) and @track (for reactive private fields, now mostly automatic) are LWC decorators. @future and @isTest are Apex annotations.",
+    "topics": ["Lightning Web Components", "UI"]
+  },
+  {
+    "id": 21,
+    "question": "To call an Apex method from a Lightning Web Component, what must the Apex method be marked with?",
+    "options": ["@AuraEnabled", "@future", "@isTest", "@RemoteAction"],
+    "correct": [0],
+    "explanation": "Apex methods exposed to LWC (and Aura) must be annotated @AuraEnabled. Use @AuraEnabled(cacheable=true) for wired, cacheable reads. @RemoteAction is for Visualforce JavaScript remoting.",
+    "topics": ["Lightning Web Components", "Apex"]
+  },
+  {
+    "id": 22,
+    "question": "Which statement about Apex exception handling and the returned data model is correct?",
+    "options": [
+      "Uncaught exceptions roll back the entire transaction and its DML",
+      "Exceptions never affect committed DML",
+      "You cannot create custom exception classes",
+      "try/catch is not supported in Apex"
+    ],
+    "correct": [0],
+    "explanation": "An uncaught exception rolls back all DML performed in the transaction. Apex supports try/catch/finally and custom exceptions (extending Exception).",
+    "topics": ["Apex", "Error Handling"]
+  },
+  {
+    "id": 23,
+    "question": "Which two collection types does Apex support? (Choose two.)",
+    "options": ["List", "Map", "Array only", "Queue keyword"],
+    "correct": [0, 1],
+    "explanation": "Apex supports List, Set, and Map collections. There is no separate fixed 'Array' type (lists serve that role) and no 'Queue' collection keyword.",
+    "topics": ["Apex", "Collections"]
+  },
+  {
+    "id": 24,
+    "question": "What determines the order in which multiple triggers on the same object and event execute?",
+    "options": [
+      "The order is not guaranteed by Salesforce",
+      "Alphabetical by class name always",
+      "By created date descending",
+      "By the number of lines of code"
+    ],
+    "correct": [0],
+    "explanation": "Salesforce does not guarantee execution order among multiple triggers on the same object/event, which is why the best practice is one trigger per object delegating to a handler.",
+    "topics": ["Apex", "Triggers", "Best Practices"]
+  },
+  {
+    "id": 25,
+    "question": "Which annotation exposes an Apex class as a REST endpoint?",
+    "options": ["@RestResource", "@AuraEnabled", "@future(callout=true)", "@HttpGet only"],
+    "correct": [0],
+    "explanation": "@RestResource(urlMapping='/...') exposes a class as a custom REST endpoint; methods within use @HttpGet, @HttpPost, etc. @HttpGet alone marks a method but the class needs @RestResource.",
+    "topics": ["Integration", "Apex"]
+  },
+  {
+    "id": 26,
+    "question": "When making an HTTP callout from a trigger context, what is required?",
+    "options": [
+      "The callout must be made asynchronously (e.g. from a @future(callout=true) or Queueable) because callouts are not allowed directly in triggers",
+      "Nothing special; callouts work directly in triggers",
+      "The callout must use SOQL",
+      "You must disable governor limits"
+    ],
+    "correct": [0],
+    "explanation": "You cannot make a synchronous callout directly during a trigger's DML transaction. You must defer it to an asynchronous context such as a @future(callout=true) method or Queueable.",
+    "topics": ["Integration", "Apex", "Triggers"]
+  },
+  {
+    "id": 27,
+    "question": "Which two statements about Apex classes 'with sharing' and 'without sharing' are true? (Choose two.)",
+    "options": [
+      "'with sharing' enforces the current user's record-level sharing rules",
+      "'without sharing' ignores the user's sharing rules",
+      "'with sharing' also enforces field-level security automatically",
+      "Sharing keywords control governor limits"
+    ],
+    "correct": [0, 1],
+    "explanation": "'with sharing' respects the running user's record sharing while 'without sharing' does not. Neither keyword enforces FLS/CRUD (that requires explicit checks) nor affects governor limits.",
+    "topics": ["Apex", "Security", "Sharing"]
+  },
+  {
+    "id": 28,
+    "question": "How many records can a single DML statement operate on before hitting the governor limit?",
+    "options": ["10,000", "150", "1,000", "50,000"],
+    "correct": [0],
+    "explanation": "A single Apex transaction can perform DML on up to 10,000 records total. (The limit of 150 is the number of DML statements, not records.)",
+    "topics": ["Apex", "Governor Limits", "DML"]
+  },
+  {
+    "id": 29,
+    "question": "Which construct lets you handle records in manageable chunks for very large data volumes with automatic re-querying per chunk?",
+    "options": ["Batch Apex (Database.Batchable)", "A single SOQL for loop only", "@future methods", "A Visualforce page"],
+    "correct": [0],
+    "explanation": "Batch Apex processes records in batches (default 200), giving each execute a fresh set of limits, which is ideal for millions of records.",
+    "topics": ["Apex", "Asynchronous"]
+  },
+  {
+    "id": 30,
+    "question": "Which two are valid ways to schedule Apex to run at a specific time? (Choose two.)",
+    "options": [
+      "Implement the Schedulable interface and use System.schedule()",
+      "Use the Schedule Apex UI under Apex Classes",
+      "Annotate the method with @future(time='...')",
+      "Use a validation rule"
+    ],
+    "correct": [0, 1],
+    "explanation": "Scheduling requires implementing Schedulable and calling System.schedule (or using the Schedule Apex UI with a cron expression). @future has no timing parameter and validation rules do not schedule code.",
+    "topics": ["Apex", "Asynchronous", "Scheduling"]
+  },
+  {
+    "id": 31,
+    "question": "What does the SOQL FOR UPDATE clause do?",
+    "options": [
+      "Locks the selected rows to prevent other transactions from updating them until the current transaction completes",
+      "Automatically updates the records",
+      "Deletes the records",
+      "Sorts the results for updating"
+    ],
+    "correct": [0],
+    "explanation": "FOR UPDATE places a lock on the queried records so concurrent transactions cannot modify them until the current transaction ends, preventing race conditions.",
+    "topics": ["SOQL", "Concurrency"]
+  },
+  {
+    "id": 32,
+    "question": "In LWC, how do you dispatch data from a child component up to its parent?",
+    "options": [
+      "Fire a CustomEvent that the parent listens for",
+      "Directly set the parent's properties",
+      "Use a global variable",
+      "Call the parent's Apex controller"
+    ],
+    "correct": [0],
+    "explanation": "Child-to-parent communication in LWC is done by dispatching a CustomEvent that the parent handles via an event listener, keeping components loosely coupled.",
+    "topics": ["Lightning Web Components", "UI"]
+  },
+  {
+    "id": 33,
+    "question": "Which two facts about custom metadata types are correct? (Choose two.)",
+    "options": [
+      "Records are deployable via change sets/packages as metadata",
+      "They can be queried in Apex with SOQL",
+      "They count against the same DML/query limits as regular records in every way",
+      "They cannot be used in formula fields"
+    ],
+    "correct": [0, 1],
+    "explanation": "Custom metadata type records are metadata (so they deploy between orgs) and are queryable in Apex. They have relaxed limits compared to regular sObjects and can be referenced in some declarative contexts.",
+    "topics": ["Data Modeling", "Custom Metadata"]
+  },
+  {
+    "id": 34,
+    "question": "What is the recommended trigger design pattern?",
+    "options": [
+      "One trigger per object that delegates logic to a handler class",
+      "Multiple triggers per object each with business logic",
+      "Put all logic directly in the trigger body",
+      "Avoid triggers entirely and use only workflow rules"
+    ],
+    "correct": [0],
+    "explanation": "The standard pattern is a single trigger per object delegating to a handler/service class, giving control over execution order and improving testability and maintainability.",
+    "topics": ["Apex", "Triggers", "Best Practices"]
+  },
+  {
+    "id": 35,
+    "question": "Which statement about test data in Apex tests is correct by default?",
+    "options": [
+      "Tests do not see existing org data and must create their own (unless @isTest(SeeAllData=true))",
+      "Tests always see all production data",
+      "Tests can never create records",
+      "Test data is permanently committed"
+    ],
+    "correct": [0],
+    "explanation": "By default Apex tests are isolated from org data and must set up their own records. SeeAllData=true (discouraged) exposes existing data. Test-created data is rolled back afterward.",
+    "topics": ["Testing", "Apex"]
+  },
+  {
+    "id": 36,
+    "question": "Which two operations can a roll-up summary be replaced by in Apex/triggers when a lookup (not master-detail) relationship is used? (Choose two.)",
+    "options": [
+      "Aggregate SOQL (e.g. SUM) in a trigger to compute the total",
+      "Apex logic in a trigger handler to update the parent",
+      "A validation rule on the child",
+      "A sharing rule"
+    ],
+    "correct": [0, 1],
+    "explanation": "Because roll-up summaries require master-detail, developers replicate the aggregation for lookups using aggregate SOQL and trigger logic to update the parent. Validation and sharing rules do not aggregate values.",
+    "topics": ["Apex", "SOQL", "Data Modeling"]
+  },
+  {
+    "id": 37,
+    "question": "What does the 'this' keyword refer to inside an Apex instance method?",
+    "options": ["The current instance of the class", "The static class type", "The trigger context", "The database connection"],
+    "correct": [0],
+    "explanation": "In Apex, 'this' refers to the current object instance, used to access instance members and disambiguate from local variables.",
+    "topics": ["Apex", "OOP"]
+  },
+  {
+    "id": 38,
+    "question": "Which two are valid Apex primitive data types? (Choose two.)",
+    "options": ["Decimal", "Blob", "Vector", "Char"],
+    "correct": [0, 1],
+    "explanation": "Apex primitives include Integer, Long, Double, Decimal, Boolean, String, Date, Datetime, Time, Blob, and Id. 'Vector' and 'Char' are not Apex types.",
+    "topics": ["Apex", "Data Types"]
+  },
+  {
+    "id": 39,
+    "question": "What is the purpose of the @testSetup annotation?",
+    "options": [
+      "To create common test records once, shared across all test methods in the class",
+      "To mark the class as a test class",
+      "To run the method after every test",
+      "To enable callouts in tests"
+    ],
+    "correct": [0],
+    "explanation": "A @testSetup method creates records once at the start; each test method then runs against a fresh copy of that data, improving efficiency and reducing duplication.",
+    "topics": ["Testing", "Apex"]
+  },
+  {
+    "id": 40,
+    "question": "Which mechanism should you use to mock an HTTP callout response in an Apex test?",
+    "options": [
+      "Implement HttpCalloutMock and use Test.setMock()",
+      "Make the real callout in the test",
+      "Use SeeAllData=true",
+      "Skip testing callout code"
+    ],
+    "correct": [0],
+    "explanation": "Tests cannot make real callouts, so you implement HttpCalloutMock (or WebServiceMock) and register it with Test.setMock() to return simulated responses.",
+    "topics": ["Testing", "Integration"]
+  },
+  {
+    "id": 41,
+    "question": "Which two statements about Apex properties are true? (Choose two.)",
+    "options": [
+      "They can have get and set accessors",
+      "They can be auto-implemented (e.g. public Integer count { get; set; })",
+      "They cannot have access modifiers",
+      "They must always query the database"
+    ],
+    "correct": [0, 1],
+    "explanation": "Apex properties support get/set accessors and auto-implemented shorthand, and can have access modifiers on the property and individual accessors.",
+    "topics": ["Apex", "OOP"]
+  },
+  {
+    "id": 42,
+    "question": "What happens to related child records in a master-detail relationship when the parent is deleted, and how does this affect Apex logic?",
+    "options": [
+      "Children are cascade-deleted, which can invoke their delete triggers",
+      "Children become orphaned",
+      "Children are automatically archived to another object",
+      "Nothing happens to the children"
+    ],
+    "correct": [0],
+    "explanation": "Deleting a master record cascade-deletes its detail records, and those deletions can fire the child object's delete triggers, which developers must account for.",
+    "topics": ["Data Modeling", "Triggers"]
+  },
+  {
+    "id": 43,
+    "question": "Which SOQL feature is used to summarize data using functions like COUNT(), SUM(), and GROUP BY?",
+    "options": ["Aggregate functions returning AggregateResult", "SOSL", "DML", "Trigger context variables"],
+    "correct": [0],
+    "explanation": "SOQL aggregate queries use functions such as COUNT, SUM, AVG, MIN, MAX with GROUP BY and return AggregateResult objects.",
+    "topics": ["SOQL", "Data"]
+  },
+  {
+    "id": 44,
+    "question": "Which two options are valid ways to invoke Apex from a declarative Flow? (Choose two.)",
+    "options": [
+      "An Apex class with an @InvocableMethod",
+      "An Apex action referenced from the flow",
+      "Any public Apex method automatically",
+      "A @future method called directly by name in a formula"
+    ],
+    "correct": [0, 1],
+    "explanation": "Flows call Apex through methods annotated @InvocableMethod (surfaced as Apex actions). Not every public method is available, and @future methods aren't invoked via flow formulas.",
+    "topics": ["Apex", "Automation", "Flow"]
+  },
+  {
+    "id": 45,
+    "question": "What is the maximum total heap size governor limit for a synchronous Apex transaction?",
+    "options": ["6 MB", "12 MB", "3 MB", "1 MB"],
+    "correct": [0],
+    "explanation": "Synchronous Apex has a heap size limit of 6 MB; asynchronous Apex allows 12 MB. Efficient handling of large data avoids hitting this.",
+    "topics": ["Apex", "Governor Limits"]
+  },
+  {
+    "id": 46,
+    "question": "Which statement about the order of execution when a record is saved is correct?",
+    "options": [
+      "Before triggers run before validation rules are re-checked and after triggers, in a defined system order",
+      "Triggers always run after workflow field updates",
+      "Validation rules never run on insert",
+      "After triggers run before before triggers"
+    ],
+    "correct": [0],
+    "explanation": "Salesforce follows a defined order of execution: system validation, before triggers, custom validation rules, the save, after triggers, assignment rules, workflow, flows, etc. Understanding this order is key to predictable behavior.",
+    "topics": ["Apex", "Order of Execution"]
+  },
+  {
+    "id": 47,
+    "question": "Which two are valid uses of the Database.Stateful interface in Batch Apex? (Choose two.)",
+    "options": [
+      "Maintain instance variable state across execute() batches",
+      "Accumulate a running total or count across the whole job",
+      "Increase the SOQL limit to unlimited",
+      "Make the batch run synchronously"
+    ],
+    "correct": [0, 1],
+    "explanation": "Implementing Database.Stateful preserves member variable values across batch executions, enabling running totals or accumulated results. It does not change limits or execution mode.",
+    "topics": ["Apex", "Asynchronous", "Batch"]
+  },
+  {
+    "id": 48,
+    "question": "How should sensitive secrets like API keys used in Apex callouts be stored?",
+    "options": [
+      "In Named Credentials or protected custom settings/metadata, not hardcoded",
+      "Hardcoded directly in the Apex class",
+      "In a public custom label",
+      "In the debug logs"
+    ],
+    "correct": [0],
+    "explanation": "Named Credentials securely store endpoint URLs and authentication, keeping secrets out of code. Protected custom settings/metadata are alternatives. Hardcoding or logging secrets is insecure.",
+    "topics": ["Integration", "Security"]
+  },
+  {
+    "id": 49,
+    "question": "Which two statements about SOQL for loops are correct? (Choose two.)",
+    "options": [
+      "They help manage heap by processing query results in batches of 200",
+      "They are useful for iterating over large query results efficiently",
+      "They increase the number of allowed SOQL queries",
+      "They automatically commit DML"
+    ],
+    "correct": [0, 1],
+    "explanation": "A SOQL for loop retrieves records in batches (200 at a time) which reduces heap usage and is efficient for large result sets. It does not change query limits or perform DML.",
+    "topics": ["SOQL", "Apex", "Governor Limits"]
+  },
+  {
+    "id": 50,
+    "question": "Which testing assertion method verifies that two values are equal and fails the test otherwise?",
+    "options": ["Assert.areEqual() (or System.assertEquals())", "System.debug()", "Test.startTest()", "Database.insert()"],
+    "correct": [0],
+    "explanation": "Assert.areEqual (modern) and System.assertEquals verify expected versus actual values, failing the test on mismatch. System.debug only logs and does not assert.",
+    "topics": ["Testing", "Apex"]
+  }
+]

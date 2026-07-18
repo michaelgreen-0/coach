@@ -1,0 +1,487 @@
+[
+  {
+    "id": 1,
+    "question": "Which feature controls the baseline level of access a user has to objects and fields, independent of records?",
+    "options": ["Sharing rules", "Profiles and permission sets", "Roles", "Public groups"],
+    "correct": [1],
+    "explanation": "Profiles and permission sets define object- and field-level access (CRUD/FLS). Roles and sharing rules control record-level access, not the baseline object permissions.",
+    "topics": ["Security", "Profiles"]
+  },
+  {
+    "id": 2,
+    "question": "In the Salesforce security model, what determines record-level access when Organization-Wide Defaults are set to Private?",
+    "options": [
+      "Only the record owner and users above them in the role hierarchy can access records, plus any sharing rules",
+      "Everyone can see all records",
+      "Field-level security",
+      "The user's login IP range"
+    ],
+    "correct": [0],
+    "explanation": "With OWD set to Private, only the owner, users above them in the role hierarchy, and those granted access via sharing rules or manual sharing can see the records.",
+    "topics": ["Security", "Sharing"]
+  },
+  {
+    "id": 3,
+    "question": "Which two tools can grant a user additional permissions beyond their profile? (Choose two.)",
+    "options": ["Permission sets", "Permission set groups", "Roles", "Sharing rules"],
+    "correct": [0, 1],
+    "explanation": "Permission sets and permission set groups extend a user's access on top of their single profile. Roles and sharing rules affect record visibility, not object/field permissions.",
+    "topics": ["Security", "Permission Sets"]
+  },
+  {
+    "id": 4,
+    "question": "What is the purpose of the role hierarchy in Salesforce?",
+    "options": [
+      "To define object-level CRUD permissions",
+      "To open up record access upward so managers can see subordinates' records",
+      "To control field-level security",
+      "To assign page layouts"
+    ],
+    "correct": [1],
+    "explanation": "The role hierarchy grants users access to records owned by or shared with users below them in the hierarchy, typically for management visibility. It does not set object or field permissions.",
+    "topics": ["Security", "Role Hierarchy"]
+  },
+  {
+    "id": 5,
+    "question": "Which automation tool is Salesforce's recommended, primary point-and-click tool for building complex business process automation today?",
+    "options": ["Workflow Rules", "Process Builder", "Flow", "Approval Processes"],
+    "correct": [2],
+    "explanation": "Salesforce Flow is the recommended go-forward automation tool. Workflow Rules and Process Builder are being retired in favor of Flow.",
+    "topics": ["Automation", "Flow"]
+  },
+  {
+    "id": 6,
+    "question": "A record must be routed for review and can be approved or rejected by a manager before it becomes active. Which tool fits best?",
+    "options": ["Approval Process", "Validation Rule", "Sharing Rule", "Assignment Rule"],
+    "correct": [0],
+    "explanation": "An Approval Process defines the steps a record goes through for approval, including approvers and actions taken on approval or rejection.",
+    "topics": ["Automation", "Approvals"]
+  },
+  {
+    "id": 7,
+    "question": "Which feature prevents users from saving a record when data does not meet specified criteria?",
+    "options": ["Validation Rule", "Workflow Rule", "Sharing Rule", "Escalation Rule"],
+    "correct": [0],
+    "explanation": "A Validation Rule evaluates data on save and blocks the save with an error message if the criteria for invalid data are met.",
+    "topics": ["Data Management", "Validation Rules"]
+  },
+  {
+    "id": 8,
+    "question": "Which two field types can enforce that a value is unique across all records of an object? (Choose two.)",
+    "options": ["Text field with the Unique attribute", "Number field with the Unique attribute", "Formula field", "Roll-up summary field"],
+    "correct": [0, 1],
+    "explanation": "Text and Number custom fields support a Unique attribute that enforces uniqueness. Formula and roll-up summary fields are calculated and cannot be marked unique.",
+    "topics": ["Data Management", "Fields"]
+  },
+  {
+    "id": 9,
+    "question": "What does a roll-up summary field do?",
+    "options": [
+      "Calculates a value (SUM, MIN, MAX, COUNT) from related detail records in a master-detail relationship",
+      "Looks up a value from any related object",
+      "Encrypts field data",
+      "Creates a many-to-many relationship"
+    ],
+    "correct": [0],
+    "explanation": "A roll-up summary field aggregates values (COUNT, SUM, MIN, MAX) from child records in a master-detail relationship onto the parent record.",
+    "topics": ["Data Management", "Relationships"]
+  },
+  {
+    "id": 10,
+    "question": "Which relationship type is required to create a roll-up summary field on the parent object?",
+    "options": ["Lookup relationship", "Master-detail relationship", "Hierarchical relationship", "External lookup"],
+    "correct": [1],
+    "explanation": "Roll-up summary fields require a master-detail relationship because the child records are tightly coupled to and owned by the parent.",
+    "topics": ["Data Management", "Relationships"]
+  },
+  {
+    "id": 11,
+    "question": "Which two statements about master-detail relationships are correct? (Choose two.)",
+    "options": [
+      "The child inherits the sharing and security of the parent",
+      "Deleting the parent deletes the child records",
+      "The child can exist without a parent",
+      "You cannot create roll-up summaries on the parent"
+    ],
+    "correct": [0, 1],
+    "explanation": "In a master-detail relationship the child inherits ownership/sharing from the parent and is deleted when the parent is deleted (cascade). Detail records cannot exist without a master.",
+    "topics": ["Data Management", "Relationships"]
+  },
+  {
+    "id": 12,
+    "question": "A user needs to see a filtered list of records they can sort and act on in bulk. Which feature provides this?",
+    "options": ["List View", "Report Type", "Dashboard", "Page Layout"],
+    "correct": [0],
+    "explanation": "List Views display a filtered set of records with sorting and inline/bulk actions. Reports and dashboards are for analytics, and page layouts control record detail arrangement.",
+    "topics": ["User Interface", "List Views"]
+  },
+  {
+    "id": 13,
+    "question": "Which report format lets you group rows by one field and columns by another to show summarized data in a grid?",
+    "options": ["Tabular", "Summary", "Matrix", "Joined"],
+    "correct": [2],
+    "explanation": "A Matrix report groups data by both rows and columns, ideal for comparing values across two dimensions. Summary groups by rows only, and tabular is a simple list.",
+    "topics": ["Reports", "Analytics"]
+  },
+  {
+    "id": 14,
+    "question": "Which two report formats support grouping of records? (Choose two.)",
+    "options": ["Tabular", "Summary", "Matrix", "Simple"],
+    "correct": [1, 2],
+    "explanation": "Summary reports group by rows and Matrix reports group by both rows and columns. Tabular reports do not support grouping.",
+    "topics": ["Reports", "Analytics"]
+  },
+  {
+    "id": 15,
+    "question": "What must exist before you can build a report in Salesforce?",
+    "options": ["A report type", "A dashboard", "A permission set", "A flow"],
+    "correct": [0],
+    "explanation": "Every report is based on a report type, which defines the objects and fields available to the report. Standard and custom report types can be used.",
+    "topics": ["Reports", "Analytics"]
+  },
+  {
+    "id": 16,
+    "question": "A dashboard component should show data as seen by different users depending on who views it. Which dashboard setting enables this?",
+    "options": ["Dynamic dashboards (running user set to viewer)", "Static running user", "Scheduled refresh", "Chatter feed"],
+    "correct": [0],
+    "explanation": "Dynamic dashboards run as the logged-in viewer, so each user sees data according to their own access. A fixed running user shows the same data to everyone.",
+    "topics": ["Dashboards", "Analytics"]
+  },
+  {
+    "id": 17,
+    "question": "Which tool is best for importing up to 50,000 records from a CSV into standard or custom objects with a guided wizard?",
+    "options": ["Data Import Wizard", "Data Loader", "Workbench", "Mass Transfer"],
+    "correct": [0],
+    "explanation": "The Data Import Wizard handles up to 50,000 records for common objects with a friendly UI and duplicate matching. Data Loader is for larger volumes and more objects.",
+    "topics": ["Data Management", "Import"]
+  },
+  {
+    "id": 18,
+    "question": "Which two capabilities does Data Loader provide that the Data Import Wizard does not? (Choose two.)",
+    "options": [
+      "Support for loads over 50,000 records (up to millions)",
+      "Ability to export and delete records",
+      "A fully guided browser wizard for beginners",
+      "Automatic duplicate prevention with no configuration"
+    ],
+    "correct": [0, 1],
+    "explanation": "Data Loader handles very large volumes and supports insert, update, upsert, delete, and export operations. The Data Import Wizard is limited to 50,000 records and cannot export or delete.",
+    "topics": ["Data Management", "Data Loader"]
+  },
+  {
+    "id": 19,
+    "question": "What does an 'upsert' operation do during a data load?",
+    "options": [
+      "Inserts new records and updates existing ones based on an external ID or record ID",
+      "Only inserts new records",
+      "Only deletes records",
+      "Exports records to CSV"
+    ],
+    "correct": [0],
+    "explanation": "Upsert combines insert and update: it matches on a record ID or external ID field, updating matches and inserting the rest.",
+    "topics": ["Data Management", "Data Loader"]
+  },
+  {
+    "id": 20,
+    "question": "Which feature lets administrators assign incoming leads or cases to users or queues based on criteria?",
+    "options": ["Assignment Rules", "Validation Rules", "Sharing Rules", "Escalation Rules"],
+    "correct": [0],
+    "explanation": "Assignment Rules automatically route leads and cases to the right user or queue based on defined criteria.",
+    "topics": ["Automation", "Sales & Service"]
+  },
+  {
+    "id": 21,
+    "question": "Which feature automatically escalates a case if it is not resolved within a defined time?",
+    "options": ["Escalation Rules", "Assignment Rules", "Auto-Response Rules", "Validation Rules"],
+    "correct": [0],
+    "explanation": "Escalation Rules escalate cases based on age or criteria, for example reassigning or notifying when an SLA is at risk.",
+    "topics": ["Service Cloud", "Automation"]
+  },
+  {
+    "id": 22,
+    "question": "Which two objects are standard objects in Salesforce Sales Cloud? (Choose two.)",
+    "options": ["Opportunity", "Lead", "Ticket", "Sprint"],
+    "correct": [0, 1],
+    "explanation": "Opportunity and Lead are standard Sales Cloud objects. 'Ticket' and 'Sprint' are not standard Salesforce objects.",
+    "topics": ["Sales Cloud", "Standard Objects"]
+  },
+  {
+    "id": 23,
+    "question": "What is the purpose of a queue in Salesforce?",
+    "options": [
+      "To hold records (e.g. leads or cases) so a group of users can take ownership from a shared pool",
+      "To store deleted records",
+      "To define field-level security",
+      "To schedule reports"
+    ],
+    "correct": [0],
+    "explanation": "Queues let a group of users share ownership of records like leads and cases, pulling work from a common pool as they have capacity.",
+    "topics": ["Automation", "Queues"]
+  },
+  {
+    "id": 24,
+    "question": "Which feature controls which fields, related lists, and buttons appear on a record's detail page?",
+    "options": ["Page Layout", "Profile", "Sharing Rule", "Report Type"],
+    "correct": [0],
+    "explanation": "Page Layouts control the organization of fields, related lists, buttons, and sections on record detail and edit pages.",
+    "topics": ["User Interface", "Page Layouts"]
+  },
+  {
+    "id": 25,
+    "question": "Which two ways can you assign different page layouts to different users for the same object? (Choose two.)",
+    "options": [
+      "By profile",
+      "By record type",
+      "By role hierarchy",
+      "By sharing rule"
+    ],
+    "correct": [0, 1],
+    "explanation": "Page layout assignments are made per profile and per record type combination. Roles and sharing rules do not control page layout assignment.",
+    "topics": ["User Interface", "Page Layouts", "Record Types"]
+  },
+  {
+    "id": 26,
+    "question": "What is the primary purpose of record types?",
+    "options": [
+      "To offer different picklist values, page layouts, and business processes to different users for the same object",
+      "To encrypt data at rest",
+      "To grant object-level CRUD",
+      "To define the role hierarchy"
+    ],
+    "correct": [0],
+    "explanation": "Record types let you tailor picklist values, page layouts, and business processes for different users or scenarios on a single object.",
+    "topics": ["Customization", "Record Types"]
+  },
+  {
+    "id": 27,
+    "question": "Which sharing mechanism allows the record owner or an admin to grant a single specific user access to one record?",
+    "options": ["Manual sharing", "Sharing rule", "Role hierarchy", "Permission set"],
+    "correct": [0],
+    "explanation": "Manual sharing grants a specific user or group access to an individual record, useful for one-off exceptions when OWD is Private or Public Read Only.",
+    "topics": ["Security", "Sharing"]
+  },
+  {
+    "id": 28,
+    "question": "Which two settings can restrict when and from where a user can log in? (Choose two.)",
+    "options": [
+      "Login IP ranges",
+      "Login hours",
+      "Field-level security",
+      "Roll-up summary fields"
+    ],
+    "correct": [0, 1],
+    "explanation": "Login IP ranges and login hours (set on the profile) restrict where and when users can access Salesforce. FLS and roll-ups are unrelated to login restrictions.",
+    "topics": ["Security", "Profiles"]
+  },
+  {
+    "id": 29,
+    "question": "A formula field should display the number of days since an Opportunity was created. Which function helps calculate this?",
+    "options": ["TODAY() minus the CreatedDate", "VLOOKUP()", "ISCHANGED()", "PRIORVALUE()"],
+    "correct": [0],
+    "explanation": "Subtracting the created date from TODAY() yields the number of days elapsed. ISCHANGED and PRIORVALUE are for automation criteria, not date math in a formula field.",
+    "topics": ["Customization", "Formulas"]
+  },
+  {
+    "id": 30,
+    "question": "Which tool would you use to see who changed a specific field on a record over time?",
+    "options": ["Field History Tracking", "Debug Logs", "Login History", "Sharing Settings"],
+    "correct": [0],
+    "explanation": "Field History Tracking records old and new values for tracked fields, letting you audit changes over time (up to a set number of fields per object).",
+    "topics": ["Data Management", "Auditing"]
+  },
+  {
+    "id": 31,
+    "question": "Which feature lets users create records quickly from a global action without navigating to the object's tab?",
+    "options": ["Quick Actions / Global Actions", "Validation Rules", "Sharing Rules", "Report Types"],
+    "correct": [0],
+    "explanation": "Global and object-specific Quick Actions let users create or update records and log activities from anywhere, streamlining data entry.",
+    "topics": ["User Interface", "Quick Actions"]
+  },
+  {
+    "id": 32,
+    "question": "In Lightning App Builder, what can an administrator use to show or hide a component based on record field values?",
+    "options": ["Component visibility filters", "Validation rules", "Sharing rules", "Assignment rules"],
+    "correct": [0],
+    "explanation": "Dynamic component visibility filters in the Lightning App Builder show or hide components based on field values, device, or other criteria without code.",
+    "topics": ["User Interface", "Lightning App Builder"]
+  },
+  {
+    "id": 33,
+    "question": "Which two are valid uses of a permission set group? (Choose two.)",
+    "options": [
+      "Bundle several permission sets to assign a job function's access at once",
+      "Use a muting permission set to remove specific permissions from the group",
+      "Replace the role hierarchy",
+      "Set organization-wide defaults"
+    ],
+    "correct": [0, 1],
+    "explanation": "Permission set groups bundle multiple permission sets to represent a job function, and muting permission sets can remove specific permissions within the group. They do not affect OWD or the role hierarchy.",
+    "topics": ["Security", "Permission Sets"]
+  },
+  {
+    "id": 34,
+    "question": "A validation rule should only block saves for records created via the UI but allow data loads. Which function helps detect this context?",
+    "options": ["$User or a bypass custom permission check", "ISNEW()", "ISBLANK()", "TEXT()"],
+    "correct": [0],
+    "explanation": "A common pattern is checking a custom permission (or a bypass flag) via $Permission so integration/admin users skip the rule. ISNEW and ISBLANK check record state, not the running context.",
+    "topics": ["Data Management", "Validation Rules"]
+  },
+  {
+    "id": 35,
+    "question": "Which feature allows customers to log and track their own cases and search a knowledge base online?",
+    "options": ["Experience Cloud (Customer Community)", "Data Loader", "Sandbox", "Approval Process"],
+    "correct": [0],
+    "explanation": "Experience Cloud (formerly Community Cloud) lets you build portals where customers can log cases, self-serve with Knowledge, and collaborate.",
+    "topics": ["Service Cloud", "Experience Cloud"]
+  },
+  {
+    "id": 36,
+    "question": "Which environment should you use to test configuration and code changes without affecting production data?",
+    "options": ["A sandbox", "Production directly", "Trailhead Playground for the org", "The recycle bin"],
+    "correct": [0],
+    "explanation": "Sandboxes are copies of your org (metadata, and optionally data) used to develop and test changes safely before deploying to production.",
+    "topics": ["Deployment", "Sandboxes"]
+  },
+  {
+    "id": 37,
+    "question": "Which two sandbox types include a copy of production data? (Choose two.)",
+    "options": ["Full sandbox", "Partial Copy sandbox", "Developer sandbox", "Developer Pro sandbox"],
+    "correct": [0, 1],
+    "explanation": "Full sandboxes include all production data and Partial Copy sandboxes include a sample. Developer and Developer Pro sandboxes copy only metadata (no records).",
+    "topics": ["Deployment", "Sandboxes"]
+  },
+  {
+    "id": 38,
+    "question": "Which tool lets you deploy metadata changes between orgs using outbound and inbound change sets?",
+    "options": ["Change Sets", "Data Loader", "Data Import Wizard", "Report Builder"],
+    "correct": [0],
+    "explanation": "Change Sets move metadata (like fields, layouts, and workflows) between related orgs such as a sandbox and production, via outbound and inbound sets.",
+    "topics": ["Deployment", "Change Sets"]
+  },
+  {
+    "id": 39,
+    "question": "A field should not be visible to a specific group of users even though it is on the page layout. What should you configure?",
+    "options": ["Field-Level Security", "Page layout removal only", "Sharing rule", "Validation rule"],
+    "correct": [0],
+    "explanation": "Field-Level Security (via profiles/permission sets) hides a field's value entirely from users regardless of page layout, and is the secure way to restrict field visibility.",
+    "topics": ["Security", "Field-Level Security"]
+  },
+  {
+    "id": 40,
+    "question": "Which two statements comparing profiles and permission sets are true? (Choose two.)",
+    "options": [
+      "A user has exactly one profile",
+      "A user can have many permission sets",
+      "A user can have many profiles",
+      "Permission sets can only remove access"
+    ],
+    "correct": [0, 1],
+    "explanation": "Each user has exactly one profile but can be assigned multiple permission sets to grant additional access. Permission sets add, not remove, access (muting sets within a group are the exception).",
+    "topics": ["Security", "Profiles", "Permission Sets"]
+  },
+  {
+    "id": 41,
+    "question": "Which feature can automatically send an email when a record meets certain criteria, using Flow?",
+    "options": ["A record-triggered flow with an email action", "A validation rule", "A sharing rule", "A report subscription only"],
+    "correct": [0],
+    "explanation": "A record-triggered flow can evaluate criteria on create/update and perform actions such as sending an email alert, updating fields, or creating related records.",
+    "topics": ["Automation", "Flow"]
+  },
+  {
+    "id": 42,
+    "question": "What is the purpose of a duplicate rule in Salesforce?",
+    "options": [
+      "To alert or block users when they try to create records that match existing ones",
+      "To merge all accounts automatically every night",
+      "To delete duplicate reports",
+      "To enforce field-level security"
+    ],
+    "correct": [0],
+    "explanation": "Duplicate rules work with matching rules to warn or block users from creating duplicate records, improving data quality.",
+    "topics": ["Data Management", "Data Quality"]
+  },
+  {
+    "id": 43,
+    "question": "Which two license-related facts are true? (Choose two.)",
+    "options": [
+      "A user's license determines which features and objects they can access",
+      "Permission set licenses can grant access to specific features on top of a user license",
+      "All users must share one license type",
+      "Licenses control the role hierarchy"
+    ],
+    "correct": [0, 1],
+    "explanation": "User licenses set the baseline of accessible features, and permission set licenses can add specific capabilities. Different users can hold different license types, and licenses don't define the role hierarchy.",
+    "topics": ["Administration", "Licenses"]
+  },
+  {
+    "id": 44,
+    "question": "Which feature allows you to grant login access to Salesforce Support to troubleshoot an issue in your org?",
+    "options": ["Grant Account Login Access", "Login IP Ranges", "Session Settings", "Delegated Administration"],
+    "correct": [0],
+    "explanation": "Grant Account Login Access lets a user (or admins on their behalf) temporarily allow Salesforce Support or admins to log in as them for troubleshooting.",
+    "topics": ["Administration", "Support"]
+  },
+  {
+    "id": 45,
+    "question": "A custom object needs a field that references records from a different object without cascade delete or ownership coupling. Which relationship should you use?",
+    "options": ["Lookup relationship", "Master-detail relationship", "Roll-up summary", "External ID"],
+    "correct": [0],
+    "explanation": "A lookup relationship links two objects loosely: the child can exist independently and deleting the parent does not delete the child. Master-detail imposes tight coupling and cascade delete.",
+    "topics": ["Data Management", "Relationships"]
+  },
+  {
+    "id": 46,
+    "question": "Which reporting feature lets you highlight values that fall above or below a threshold with color?",
+    "options": ["Conditional highlighting", "Bucket fields", "Cross filters", "Report subscriptions"],
+    "correct": [0],
+    "explanation": "Conditional highlighting colors summary values based on ranges you define, drawing attention to high or low numbers. Bucketing categorizes values and cross filters filter by related records.",
+    "topics": ["Reports", "Analytics"]
+  },
+  {
+    "id": 47,
+    "question": "Which two multi-factor authentication (MFA) statements are correct for Salesforce? (Choose two.)",
+    "options": [
+      "MFA is required for all users accessing Salesforce products",
+      "The Salesforce Authenticator app can serve as a verification method",
+      "MFA can be fully disabled with no consequence",
+      "MFA only applies to the System Administrator profile"
+    ],
+    "correct": [0, 1],
+    "explanation": "Salesforce requires MFA for direct logins, and the Salesforce Authenticator app is one supported verification method. MFA applies to all users, not just admins.",
+    "topics": ["Security", "MFA"]
+  },
+  {
+    "id": 48,
+    "question": "What is the main function of the AppExchange?",
+    "options": [
+      "A marketplace to install third-party apps, components, and consulting services",
+      "A tool to load data",
+      "A sandbox refresh scheduler",
+      "A place to build reports"
+    ],
+    "correct": [0],
+    "explanation": "AppExchange is Salesforce's marketplace where admins can find and install apps, Lightning components, flows, and connect with consulting partners.",
+    "topics": ["Administration", "AppExchange"]
+  },
+  {
+    "id": 49,
+    "question": "Which feature restricts the set of picklist values available on a dependent field based on a controlling field's value?",
+    "options": ["Dependent picklists (field dependencies)", "Validation rules", "Record types only", "Roll-up summaries"],
+    "correct": [0],
+    "explanation": "Field dependencies (dependent picklists) filter the available values in a dependent picklist based on the selected value in a controlling field.",
+    "topics": ["Customization", "Fields"]
+  },
+  {
+    "id": 50,
+    "question": "An administrator wants to prevent standard users from deleting Account records while still allowing them to edit. What is the correct approach?",
+    "options": [
+      "Remove the Delete permission for Accounts on their profile or via permission sets",
+      "Create a validation rule to block edits",
+      "Set OWD to Private",
+      "Add a sharing rule"
+    ],
+    "correct": [0],
+    "explanation": "Object-level CRUD permissions on the profile/permission set control delete rights. Removing Delete while keeping Edit achieves the requirement. OWD and sharing rules govern record visibility, not delete capability.",
+    "topics": ["Security", "Profiles", "Object Permissions"]
+  }
+]

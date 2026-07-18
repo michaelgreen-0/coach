@@ -10,7 +10,13 @@ def test_load_bundled_config():
     result = load_config(BUNDLED_CONFIG)
     assert isinstance(result, Ok)
     cfg = result.value
-    assert [s.name for s in cfg.subjects] == ["General Knowledge", "Python Basics"]
+    assert [s.name for s in cfg.subjects] == [
+        "AWS Solutions Architect",
+        "AWS Cloud Practitioner",
+        "Salesforce Administrator",
+        "Salesforce Platform Developer I",
+        "Terraform Associate",
+    ]
     for subject in cfg.subjects:
         assert subject.bank_path.is_file()
     assert cfg.tutor is not None

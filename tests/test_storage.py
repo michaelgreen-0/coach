@@ -10,13 +10,17 @@ from coach.backend.services.storage import (
     save_progress,
 )
 
-SAMPLE_BANK = Path(__file__).resolve().parent.parent / "examples" / "sample-bank.json"
+SAMPLE_BANK = (
+    Path(__file__).resolve().parent.parent
+    / "examples"
+    / "aws-cloud-practitioner-bank.json"
+)
 
 
 def test_load_bank_ok():
     result = load_bank(SAMPLE_BANK)
     assert isinstance(result, Ok)
-    assert len(result.value) == 10
+    assert len(result.value) == 50
 
 
 def test_load_bank_missing_is_err(tmp_path: Path):

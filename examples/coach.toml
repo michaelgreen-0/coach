@@ -5,16 +5,28 @@
 # path, a course. You pick a subject when the app starts. A config with a
 # single subject can use the shorthand instead:
 #
-#   subject = "General Knowledge"
-#   bank    = "sample-bank.json"
+#   subject = "AWS Cloud Practitioner"
+#   bank    = "aws-cloud-practitioner-bank.json"
 
 [[subject]]
-name = "General Knowledge"
-bank = "sample-bank.json"   # relative to this config file
+name = "AWS Solutions Architect"
+bank = "aws-solutions-architect-bank.json"   # relative to this config file
 
 [[subject]]
-name = "Python Basics"
-bank = "python-bank.json"
+name = "AWS Cloud Practitioner"
+bank = "aws-cloud-practitioner-bank.json"
+
+[[subject]]
+name = "Salesforce Administrator"
+bank = "salesforce-administrator-bank.json"
+
+[[subject]]
+name = "Salesforce Platform Developer I"
+bank = "salesforce-platform-developer-1-bank.json"
+
+[[subject]]
+name = "Terraform Associate"
+bank = "terraform-associate-bank.json"
 
 # Per-user rate limits. These are the defaults; the tutor cap is
 # what protects your LLM bill.
