@@ -20,7 +20,7 @@ def test_load_bundled_config():
     for subject in cfg.subjects:
         assert subject.bank_path.is_file()
     assert cfg.tutor is not None
-    assert cfg.tutor.model == "claude-sonnet-5"
+    assert cfg.tutor.model == "claude-haiku-4-5"
 
 
 def test_legacy_single_subject_config(tmp_path: Path):
