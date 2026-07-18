@@ -9,6 +9,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ValidationError
 
+from .files import atomic_write_text
 from .models import Err, Ok, Result
 
 USERNAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]{2,31}$")
@@ -47,9 +48,8 @@ def _load_json(path: Path, model: type[BaseModel]) -> dict:
 
 def _save_json(path: Path, records: dict) -> Result[None]:
     try:
-        path.parent.mkdir(parents=True, exist_ok=True)
         payload = {k: v.model_dump() for k, v in records.items()}
-        path.write_text(json.dumps(payload, indent=2))
+        atomic_write_text(path, json.dumps(payload, indent=2))
     except OSError as exc:
         return Err(f"could not save {path}: {exc}")
     return Ok(None)

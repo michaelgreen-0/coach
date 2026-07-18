@@ -3,6 +3,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ValidationError
 
+from ..core.files import atomic_write_text
 from ..core.models import Bank, Err, Ok, Result, _format, parse_bank
 
 
@@ -53,8 +54,7 @@ def load_progress(path: Path) -> Result[Progress]:
 
 def save_progress(progress: Progress, path: Path) -> Result[None]:
     try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(progress.model_dump_json(indent=2))
+        atomic_write_text(path, progress.model_dump_json(indent=2))
     except OSError as exc:
         return Err(f"could not save progress to {path}: {exc}")
     return Ok(None)
