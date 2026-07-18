@@ -33,6 +33,7 @@ class AppState:
     users: UserStore
     sessions: SessionStore
     invite_code: str
+    secure_cookies: bool  # send the session cookie only over HTTPS (enable in production)
     tutor_on: bool
     limiter: RateLimiter
     lock: threading.Lock = field(default_factory=threading.Lock)  # guards the progress cache and its saves

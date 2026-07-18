@@ -17,6 +17,11 @@ from .services.storage import load_bank
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "frontend" / "static"
 INVITE_ENV = "COACH_INVITE_CODE"
+SECURE_COOKIES_ENV = "COACH_SECURE_COOKIES"
+
+
+def _env_flag(value: str | None) -> bool:
+    return (value or "").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def create_app(config_path: Path | None = None) -> FastAPI:
@@ -43,6 +48,7 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         users=UserStore(cfg.data_dir / "users.json"),
         sessions=SessionStore(cfg.data_dir / "sessions.json"),
         invite_code=os.environ.get(INVITE_ENV, ""),
+        secure_cookies=_env_flag(os.environ.get(SECURE_COOKIES_ENV)),
         tutor_on=cfg.tutor is not None and tutor_service.tutor_available(cfg.tutor),
         limiter=RateLimiter(),
     )

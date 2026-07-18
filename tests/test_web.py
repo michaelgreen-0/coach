@@ -262,6 +262,25 @@ def test_state_reports_signed_in(client):
     assert client.get("/api/state").json()["signed_in"] is True
 
 
+def test_session_cookie_not_secure_by_default(anon_client):
+    res = anon_client.post("/api/register",
+                           json={"username": "plainuser", "password": "password123"})
+    assert "secure" not in res.headers["set-cookie"].lower()
+
+
+def test_session_cookie_secure_when_enabled(tmp_path, monkeypatch):
+    (tmp_path / "bank.json").write_text(json.dumps(BANK))
+    cfg = tmp_path / "coach.toml"
+    cfg.write_text(
+        f'subject = "Test Subject"\nbank = "bank.json"\ndata_dir = "{tmp_path / "data"}"\n'
+    )
+    monkeypatch.setenv("COACH_SECURE_COOKIES", "true")
+    client = TestClient(create_app(cfg))
+    res = client.post("/api/register",
+                      json={"username": "secureuser", "password": "password123"})
+    assert "secure" in res.headers["set-cookie"].lower()
+
+
 def test_register_validation(anon_client):
     bad = anon_client.post("/api/register",
                            json={"username": "Bad Name!", "password": "password123"})

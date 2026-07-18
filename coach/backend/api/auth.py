@@ -18,7 +18,7 @@ def _sign_in(state: AppState, response: Response, username: str) -> dict:
     response.set_cookie(
         SESSION_COOKIE, token,
         max_age=int(SESSION_TTL.total_seconds()),
-        httponly=True, samesite="lax", path="/",
+        httponly=True, samesite="lax", secure=state.secure_cookies, path="/",
     )
     return {"username": username}
 
@@ -60,5 +60,7 @@ def login(req: LoginRequest, request: Request, response: Response,
 def logout(response: Response, state: AppState = Depends(get_state),
            session: str | None = Cookie(default=None)):
     state.sessions.revoke(session)
-    response.delete_cookie(SESSION_COOKIE, path="/")
+    response.delete_cookie(
+        SESSION_COOKIE, path="/", httponly=True, samesite="lax", secure=state.secure_cookies,
+    )
     return {"signed_out": True}
