@@ -7,11 +7,14 @@ import { renderQuestion } from "./quiz.js";
 export function openTutorForQuestion(afterAnswer) {
   const qz = S.quiz;
   const q = qz.pool[qz.i];
+  const pickedIdx = [...qz.selected].sort((a, b) => a - b);
+  const picked = pickedIdx.map(letter).join(", ");
+  const shared = { qid: q.id, question: q.question, options: q.options, pickedIdx, picked };
   if (afterAnswer) {
-    const picked = [...qz.selected].sort((a, b) => a - b).map(letter).join(", ");
-    openTutor({ qid: q.id, stage: "reveal", correct: qz.graded.correct, picked }, "quiz");
+    const correctIdx = qz.graded.correct_letters.map((l) => l.charCodeAt(0) - 65);
+    openTutor({ ...shared, stage: "reveal", correct: qz.graded.correct, correctIdx }, "quiz");
   } else {
-    openTutor({ qid: q.id, stage: "hint" }, "quiz");
+    openTutor({ ...shared, stage: "hint" }, "quiz");
   }
 }
 
@@ -27,14 +30,46 @@ export function openTutor(ctx, returnTo) {
   };
   $("chat-log").replaceChildren();
   const context = $("tutor-context");
+  const card = $("tutor-question");
+  card.replaceChildren();
+  const hasQuestion = !!(ctx && ctx.question);
   context.hidden = !ctx;
+  card.hidden = !hasQuestion;
   if (ctx) {
     context.textContent = ctx.stage === "hint"
       ? `about question #${ctx.qid} — hints only, no spoilers.`
       : `about question #${ctx.qid}.`;
+    if (hasQuestion) renderTutorQuestion(card, ctx);
   }
   show("tutor");
   $("chat-input").focus();
+}
+
+// Mirror the quiz's question + grading so it stays visible while chatting.
+// Before answering (hint) the correct answer is withheld — no spoilers.
+function renderTutorQuestion(card, ctx) {
+  card.append(el("p", "tq-text", ctx.question));
+  const list = el("ol", "tq-options");
+  const reveal = ctx.stage !== "hint";
+  const correct = new Set(reveal ? ctx.correctIdx : []);
+  const picked = new Set(ctx.pickedIdx);
+  ctx.options.forEach((text, i) => {
+    const row = el("li", "tq-row");
+    row.append(el("span", "bubble", letter(i)), el("span", "option-text", text));
+    if (reveal && correct.has(i)) {
+      row.classList.add("is-right");
+      row.append(el("span", "tq-mark right", picked.has(i) ? "✓ your pick" : "✓ answer"));
+    } else if (reveal && picked.has(i)) {
+      row.classList.add("is-wrong");
+      row.append(el("span", "tq-mark wrong", "✗ your pick"));
+    } else if (picked.has(i)) {
+      row.append(el("span", "tq-mark pick", "your pick"));
+    } else if (reveal) {
+      row.classList.add("is-faded");
+    }
+    list.append(row);
+  });
+  card.append(list);
 }
 
 export function closeTutor() {

@@ -430,6 +430,36 @@ kbd {
   justify-content: space-between;
 }
 
+.tutor-question {
+  margin-top: 1rem;
+  padding: .9rem 1rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.tq-text { margin: 0 0 .75rem; font: 600 1rem/1.4 var(--serif); }
+.tq-options { list-style: none; margin: 0; padding: 0; display: grid; gap: .4rem; }
+.tq-row {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  padding: .45rem .6rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-size: .9rem;
+}
+.tq-row .bubble { width: 1.55rem; height: 1.55rem; }
+.tq-row.is-right { border-color: var(--right); }
+.tq-row.is-right .bubble { background: var(--right); border-color: var(--right); color: var(--card); }
+.tq-row.is-wrong { border-color: var(--wrong); }
+.tq-row.is-wrong .bubble { background: var(--wrong); border-color: var(--wrong); color: var(--card); }
+.tq-row.is-wrong .option-text { text-decoration: line-through; text-decoration-color: var(--wrong); }
+.tq-row.is-faded { opacity: .5; }
+.tq-mark { margin-left: auto; font: 600 .78rem var(--mono); white-space: nowrap; }
+.tq-mark.right { color: var(--right); }
+.tq-mark.wrong { color: var(--wrong); }
+.tq-mark.pick { color: var(--dim); }
+
 .chat {
   margin-top: 1.25rem;
   display: grid;
