@@ -54,7 +54,7 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         limiter=RateLimiter(),
     )
 
-    app = FastAPI(title="coach")
+    app = FastAPI(title="coach", docs_url=None, redoc_url=None, openapi_url=None)
     app.state.app_state = app_state
 
     @app.exception_handler(StarletteHTTPException)
