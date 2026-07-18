@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS users (
     created  TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS sessions (
-    token    TEXT PRIMARY KEY,
+    token    TEXT PRIMARY KEY,  -- sha256 of the cookie token, never the raw value
     username TEXT NOT NULL,
     expires  TEXT NOT NULL
 );
@@ -31,6 +31,11 @@ CREATE TABLE IF NOT EXISTS sessions (
 
 def _hash_password(password: str, salt: bytes) -> bytes:
     return hashlib.scrypt(password.encode(), salt=salt, n=2**14, r=8, p=1)
+
+
+def _hash_token(token: str) -> str:
+    # a leaked db shouldn't hand over live sessions; the raw token stays in the cookie only
+    return hashlib.sha256(token.encode()).hexdigest()
 
 
 def _now() -> datetime:
@@ -102,13 +107,17 @@ class UserStore:
 class SessionStore:
     def __init__(self, db: Database):
         self._db = db
+        self._sweep()
+
+    def _sweep(self) -> None:
         self._db.write("DELETE FROM sessions WHERE expires <= ?", (_stamp(_now()),))
 
     def create(self, username: str) -> str:
         token = secrets.token_urlsafe(32)
+        self._sweep()  # logins are rare, so piggyback the expired-row cleanup here
         self._db.write(
             "INSERT INTO sessions (token, username, expires) VALUES (?, ?, ?)",
-            (token, username, _stamp(_now() + SESSION_TTL)),
+            (_hash_token(token), username, _stamp(_now() + SESSION_TTL)),
         )
         return token
 
@@ -117,14 +126,14 @@ class SessionStore:
             return None
         row = self._db.read_one(
             "SELECT username FROM sessions WHERE token = ? AND expires > ?",
-            (token, _stamp(_now())),
+            (_hash_token(token), _stamp(_now())),
         )
         return row["username"] if row else None
 
     def revoke(self, token: str | None) -> None:
         if not token:
             return
-        self._db.write("DELETE FROM sessions WHERE token = ?", (token,))
+        self._db.write("DELETE FROM sessions WHERE token = ?", (_hash_token(token),))
 
 
 def migrate_json_files(db: Database, data_dir: Path) -> None:
@@ -139,7 +148,7 @@ def migrate_json_files(db: Database, data_dir: Path) -> None:
     if db.read_one("SELECT 1 FROM sessions LIMIT 1") is None:
         _import(db, data_dir / "sessions.json",
                 "INSERT OR IGNORE INTO sessions (token, username, expires) VALUES (?, ?, ?)",
-                lambda k, r: (k, r["username"], r["expires"]),
+                lambda k, r: (_hash_token(k), r["username"], r["expires"]),
                 required={"username", "expires"})
 
 

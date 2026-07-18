@@ -7,6 +7,7 @@ from coach.backend.core.security import (
     Database,
     SessionStore,
     UserStore,
+    _hash_token,
     _now,
     _stamp,
     migrate_json_files,
@@ -36,11 +37,15 @@ def test_register_validation_and_duplicates(tmp_path):
 
 
 def test_session_lifecycle(tmp_path):
-    sessions = SessionStore(_db(tmp_path))
+    db = _db(tmp_path)
+    sessions = SessionStore(db)
     token = sessions.create("alice")
     assert sessions.resolve(token) == "alice"
     assert sessions.resolve(None) is None
     assert sessions.resolve("bogus") is None
+    # the raw token lives in the cookie only; the db holds its hash
+    assert db.read_one("SELECT 1 FROM sessions WHERE token = ?", (token,)) is None
+    assert db.read_one("SELECT 1 FROM sessions WHERE token = ?", (_hash_token(token),)) is not None
     sessions.revoke(token)
     assert sessions.resolve(token) is None
 
@@ -50,7 +55,7 @@ def test_expired_session_is_not_resolved(tmp_path):
     sessions = SessionStore(db)
     past = _stamp(_now() - timedelta(minutes=1))
     db.write("INSERT INTO sessions (token, username, expires) VALUES (?, ?, ?)",
-             ("stale", "alice", past))
+             (_hash_token("stale"), "alice", past))
     assert sessions.resolve("stale") is None
 
 
