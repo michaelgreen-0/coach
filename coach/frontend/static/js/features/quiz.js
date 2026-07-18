@@ -89,7 +89,7 @@ function renderQuizActions() {
   const qz = S.quiz;
   const box = $("quiz-actions");
   box.replaceChildren();
-  const tut = S.info.tutor_on;
+  const tut = S.info.tutor_on && S.info.signed_in;
 
   if (qz.stage === "answering") {
     const check = el("button", "btn primary", "check answer");

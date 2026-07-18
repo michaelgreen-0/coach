@@ -2,15 +2,23 @@ import { S } from "../core/state.js";
 import { $ } from "../core/dom.js";
 import { show } from "../core/view.js";
 import { api } from "../core/api.js";
-import { loadSubjects } from "./subjects.js";
+import { loadSubjects, goHome } from "./subjects.js";
 
 export function showAuth() {
   S.username = null;
-  renderUserChip();
+  $("user-chip").hidden = true;
+  $("sign-in").hidden = true;  // the header entry point is redundant while the form is up
   $("set-switch").hidden = true;
   setAuthMode(S.authMode);
+  $("auth-cancel").hidden = S.subjects.length === 0;
   show("auth");
   $("auth-username").focus();
+}
+
+// Land in the app for the current signed-in-or-not state.
+export async function enterApp() {
+  renderUserChip();
+  await loadSubjects();
 }
 
 function setAuthMode(mode) {
@@ -26,14 +34,15 @@ function setAuthMode(mode) {
 }
 
 function renderUserChip() {
-  $("user-chip").hidden = !S.username;
-  if (S.username) $("user-name").textContent = S.username + " ·";
+  const signedIn = !!S.username;
+  $("user-chip").hidden = !signedIn;
+  $("sign-in").hidden = signedIn;
+  if (signedIn) $("user-name").textContent = S.username + " ·";
 }
 
 export async function signedIn(username) {
   S.username = username;
-  renderUserChip();
-  await loadSubjects();
+  await enterApp();
 }
 
 $("auth-form").addEventListener("submit", async (e) => {
@@ -59,13 +68,20 @@ $("auth-toggle").addEventListener("click", () => {
   $("auth-username").focus();
 });
 
+$("sign-in").addEventListener("click", showAuth);
+
+$("auth-cancel").addEventListener("click", () => {
+  renderUserChip();
+  goHome();
+});
+
 $("sign-out").addEventListener("click", async () => {
   try { await api("/api/logout", {}); } catch { /* signing out locally regardless */ }
+  S.username = null;
   S.subject = null;
-  S.subjects = [];
   S.set = null;
   S.quiz = null;
   S.sessionMsg = null;
   S.authMode = "login";
-  showAuth();
+  await enterApp();  // stay in the app as an anonymous visitor
 });

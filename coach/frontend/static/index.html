@@ -19,6 +19,7 @@
       <span class="visually-hidden">question set</span>
       <select id="set-select"></select>
     </label>
+    <button class="btn quiet mono" id="sign-in" type="button" hidden>sign in</button>
     <span class="user-chip mono" id="user-chip" hidden>
       <span id="user-name"></span>
       <button class="btn quiet" id="sign-out" type="button">sign out</button>
@@ -51,6 +52,7 @@
         <button class="btn quiet" id="auth-toggle" type="button">new here? create an account</button>
       </div>
     </form>
+    <p><button class="btn quiet" id="auth-cancel" type="button" hidden>← browse without signing in</button></p>
   </section>
 
   <!-- ── Subject picker ───────────────────────────────── -->
@@ -71,9 +73,10 @@
     <nav class="contents" aria-label="study menu">
       <h2 class="contents-head">study</h2>
       <ol class="toc" id="menu-study"></ol>
-      <h2 class="contents-head">progress</h2>
+      <h2 class="contents-head" id="progress-head">progress</h2>
       <ol class="toc" id="menu-progress"></ol>
     </nav>
+    <p class="hint" id="signin-hint" hidden></p>
     <p class="hint" id="tutor-hint" hidden></p>
   </section>
 

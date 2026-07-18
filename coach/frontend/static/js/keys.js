@@ -21,9 +21,9 @@ document.addEventListener("keydown", (e) => {
     }
   } else if (S.view === "menu") {
     const item = MENU_STUDY.find((m) => m.key === k);
-    if (item) { e.preventDefault(); item.run(); }
-    else if (k === "6") showDashboard();
-    else if (k === "7" && S.info.tutor_on) openTutor(null, "menu");
+    if (item && (!item.needsAuth || S.info.signed_in)) { e.preventDefault(); item.run(); }
+    else if (k === "6" && S.info.signed_in) showDashboard();
+    else if (k === "7" && S.info.tutor_on && S.info.signed_in) openTutor(null, "menu");
     else if (k === "c" && S.subjects.length > 1) goHome();
     else if (k === "s" && S.info.sets.length) $("set-select").focus();
   } else if (S.view === "topics") {
@@ -41,7 +41,7 @@ document.addEventListener("keydown", (e) => {
       if (k === "enter") { e.preventDefault(); checkAnswer(); }
       else if (k === "s") skipQuestion();
       else if (k === "m") leaveQuiz();
-      else if (k === "t" && S.info.tutor_on) openTutorForQuestion(false);
+      else if (k === "t" && S.info.tutor_on && S.info.signed_in) openTutorForQuestion(false);
       else if (k >= "a" && k <= "z") {
         const i = k.charCodeAt(0) - 97;
         if (i < qz.pool[qz.i].options.length) toggleOption(i);
@@ -49,7 +49,7 @@ document.addEventListener("keydown", (e) => {
     } else {
       if (k === "enter") { e.preventDefault(); nextQuestion(); }
       else if (k === "m") leaveQuiz();
-      else if (k === "t" && S.info.tutor_on) openTutorForQuestion(true);
+      else if (k === "t" && S.info.tutor_on && S.info.signed_in) openTutorForQuestion(true);
     }
   }
 });

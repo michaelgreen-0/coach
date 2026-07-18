@@ -4,14 +4,26 @@ from fastapi import APIRouter, Depends
 
 from ..core.models import Err
 from ..services import analytics, quiz
-from .deps import AppState, bank_sets, err, filtered_bank, get_current_user, get_state
+from ..services.storage import Progress
+from .deps import (
+    AppState,
+    bank_sets,
+    err,
+    filtered_bank,
+    get_current_user,
+    get_optional_user,
+    get_state,
+)
 from .schemas import AnswerRequest, QuizRequest, SessionRequest
 
 router = APIRouter(prefix="/api", tags=["study"])
 
+# Modes that lean on saved progress; only signed-in users can run them.
+PROGRESS_MODES = {"weak", "unseen", "missed"}
+
 
 @router.get("/subjects")
-def subjects(state: AppState = Depends(get_state), user: str = Depends(get_current_user)):
+def subjects(state: AppState = Depends(get_state), user: str | None = Depends(get_optional_user)):
     return {
         "subjects": [
             {
@@ -26,7 +38,7 @@ def subjects(state: AppState = Depends(get_state), user: str = Depends(get_curre
 
 @router.get("/state")
 def state_view(subject: str | None = None, set: str | None = None,
-               state: AppState = Depends(get_state), user: str = Depends(get_current_user)):
+               state: AppState = Depends(get_state), user: str | None = Depends(get_optional_user)):
     st = state.subject_state(subject)
     if st is None:
         return err(f"unknown subject: {subject}", status=404)
@@ -43,6 +55,7 @@ def state_view(subject: str | None = None, set: str | None = None,
         "active_set": set,
         "question_count": len(bank),
         "topics": topics,
+        "signed_in": user is not None,
         "tutor_on": state.tutor_on,
         "tutor_disabled_hint": (
             f"tutor disabled — set ${cfg.tutor.api_key_env} to enable it."
@@ -53,20 +66,28 @@ def state_view(subject: str | None = None, set: str | None = None,
 
 @router.post("/quiz")
 def start_quiz(req: QuizRequest, state: AppState = Depends(get_state),
-               user: str = Depends(get_current_user)):
+               user: str | None = Depends(get_optional_user)):
     st = state.subject_state(req.subject)
     if st is None:
         return err(f"unknown subject: {req.subject}", status=404)
-    up = state.user_progress(user, st)
-    if isinstance(up, Err):
-        return err(up.message, status=500)
+    if user is None and req.mode in PROGRESS_MODES:
+        return err("sign in to use this quiz mode", status=401)
+
+    # Anonymous visitors quiz against empty, unsaved progress.
+    if user is None:
+        progress = Progress()
+    else:
+        up = state.user_progress(user, st)
+        if isinstance(up, Err):
+            return err(up.message, status=500)
+        progress = up.progress
     bank = filtered_bank(st.bank, req.set)
     with state.lock:
-        pool = quiz.pick_questions(bank, up.progress, req.mode, req.topic)
+        pool = quiz.pick_questions(bank, progress, req.mode, req.topic)
 
     focus: list[str] = []
     if req.mode == "weak":
-        focus = [t.topic for t in analytics.weak_topics(bank, up.progress)[:3]]
+        focus = [t.topic for t in analytics.weak_topics(bank, progress)[:3]]
 
     questions = [
         {
@@ -84,7 +105,7 @@ def start_quiz(req: QuizRequest, state: AppState = Depends(get_state),
 
 @router.post("/answer")
 def answer(req: AnswerRequest, state: AppState = Depends(get_state),
-           user: str = Depends(get_current_user)):
+           user: str | None = Depends(get_optional_user)):
     st = state.subject_state(req.subject)
     if st is None:
         return err(f"unknown subject: {req.subject}", status=404)
@@ -94,14 +115,17 @@ def answer(req: AnswerRequest, state: AppState = Depends(get_state),
     parsed = quiz.parse_answer(req.answer, len(q.options))
     if isinstance(parsed, Err):
         return err(parsed.message)
-    up = state.user_progress(user, st)
-    if isinstance(up, Err):
-        return err(up.message, status=500)
 
     correct = quiz.is_correct(q, parsed.value)
-    with state.lock:
-        quiz.record_result(up.progress, q.id, correct)
-        warning = state.save(up)
+    warning = None
+    # Anonymous answers are graded but never recorded — no account to save under.
+    if user is not None:
+        up = state.user_progress(user, st)
+        if isinstance(up, Err):
+            return err(up.message, status=500)
+        with state.lock:
+            quiz.record_result(up.progress, q.id, correct)
+            warning = state.save(up)
     return {
         "correct": correct,
         "correct_letters": list(q.answer_letters),
@@ -112,11 +136,12 @@ def answer(req: AnswerRequest, state: AppState = Depends(get_state),
 
 @router.post("/session")
 def finish_session(req: SessionRequest, state: AppState = Depends(get_state),
-                   user: str = Depends(get_current_user)):
+                   user: str | None = Depends(get_optional_user)):
     st = state.subject_state(req.subject)
     if st is None:
         return err(f"unknown subject: {req.subject}", status=404)
-    if req.asked <= 0:
+    # Nothing to record for anonymous sessions.
+    if user is None or req.asked <= 0:
         return {"recorded": False, "warning": None}
     up = state.user_progress(user, st)
     if isinstance(up, Err):

@@ -64,13 +64,21 @@ def get_state(request: Request) -> AppState:
     return request.app.state.app_state
 
 
-def get_current_user(request: Request, session: str | None = Cookie(default=None)) -> str:
+def get_optional_user(request: Request, session: str | None = Cookie(default=None)) -> str | None:
+    """Resolve the signed-in user, or None for anonymous visitors. Rate-limits
+    either way — signed-in users by name, anonymous ones by client IP."""
     state = get_state(request)
     username = state.sessions.resolve(session)
+    bucket = f"api:{username}" if username else f"api:anon:{client_ip(request)}"
+    if not state.limiter.allow(bucket, state.cfg.limits.requests_per_minute, 60):
+        raise HTTPException(status_code=429, detail="too many requests — give it a minute")
+    return username
+
+
+def get_current_user(request: Request, session: str | None = Cookie(default=None)) -> str:
+    username = get_optional_user(request, session)
     if username is None:
         raise HTTPException(status_code=401, detail="not signed in")
-    if not state.limiter.allow(f"api:{username}", state.cfg.limits.requests_per_minute, 60):
-        raise HTTPException(status_code=429, detail="too many requests — give it a minute")
     return username
 
 

@@ -16,7 +16,7 @@ export function notice(text) {
 
 export function setFootKeys(view) {
   const f = $("foot-keys");
-  const tut = S.info && S.info.tutor_on;
+  const tut = S.info && S.info.tutor_on && S.info.signed_in;
   if (view === "quiz" && S.quiz) {
     const last = letter(S.quiz.pool[S.quiz.i].options.length - 1).toLowerCase();
     f.textContent = S.quiz.stage === "answering"

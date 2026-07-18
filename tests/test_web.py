@@ -220,21 +220,46 @@ def anon_client(tmp_path):
     return TestClient(create_app(cfg))
 
 
-def test_endpoints_require_auth(anon_client):
+def test_anonymous_can_browse_and_quiz(anon_client):
+    # logged-out visitors can see the certifications and take quizzes
+    assert anon_client.get("/api/subjects").status_code == 200
+    state = anon_client.get("/api/state").json()
+    assert state["signed_in"] is False
+    assert anon_client.post("/api/quiz", json={"mode": "all"}).status_code == 200
+    assert anon_client.post("/api/quiz", json={"mode": "topic", "topic": "Chemistry"}).status_code == 200
+    graded = anon_client.post("/api/answer", json={"id": 1, "answer": "b"}).json()
+    assert graded["correct"] is True
+    assert graded["explanation"] == "Iron oxide."
+    # session finish is a no-op for anonymous
+    assert anon_client.post("/api/session", json={"asked": 3, "correct": 2}).json() == {
+        "recorded": False, "warning": None,
+    }
+
+
+def test_anonymous_gated_features_need_auth(anon_client):
+    # progress-driven quiz modes, the dashboard and the tutor all require sign-in
     for res in (
-        anon_client.get("/api/subjects"),
-        anon_client.get("/api/state"),
-        anon_client.post("/api/quiz", json={"mode": "all"}),
-        anon_client.post("/api/answer", json={"id": 1, "answer": "a"}),
+        anon_client.post("/api/quiz", json={"mode": "weak"}),
+        anon_client.post("/api/quiz", json={"mode": "unseen"}),
+        anon_client.post("/api/quiz", json={"mode": "missed"}),
         anon_client.get("/api/dashboard"),
         anon_client.post("/api/tutor", json={"message": "hi"}),
     ):
         assert res.status_code == 401
-        assert res.json() == {"error": "not signed in"}
     # the page itself and auth status stay public
     assert anon_client.get("/").status_code == 200
     status = anon_client.get("/api/auth").json()
     assert status == {"signed_in": False, "username": None, "invite_required": False}
+
+
+def test_anonymous_answers_are_not_saved(anon_client, tmp_path):
+    anon_client.post("/api/answer", json={"id": 1, "answer": "b"})
+    # nothing persisted — no per-user progress directory is created
+    assert not (tmp_path / "data" / "progress").exists()
+
+
+def test_state_reports_signed_in(client):
+    assert client.get("/api/state").json()["signed_in"] is True
 
 
 def test_register_validation(anon_client):
@@ -257,8 +282,11 @@ def test_register_validation(anon_client):
 def test_login_and_logout(anon_client):
     anon_client.post("/api/register",
                      json={"username": "friend", "password": "password123"})
+    assert anon_client.get("/api/state").json()["signed_in"] is True
     anon_client.post("/api/logout", json={})
-    assert anon_client.get("/api/state").status_code == 401
+    # browsing still works after logout, but the session no longer authenticates
+    assert anon_client.get("/api/state").json()["signed_in"] is False
+    assert anon_client.get("/api/dashboard").status_code == 401
 
     wrong = anon_client.post("/api/login",
                              json={"username": "friend", "password": "wrongwrong"})
@@ -267,7 +295,7 @@ def test_login_and_logout(anon_client):
     ok = anon_client.post("/api/login",
                           json={"username": "friend", "password": "password123"})
     assert ok.status_code == 200
-    assert anon_client.get("/api/state").status_code == 200
+    assert anon_client.get("/api/state").json()["signed_in"] is True
     assert anon_client.get("/api/auth").json()["username"] == "friend"
 
 
@@ -361,4 +389,4 @@ def test_sessions_survive_restart(tmp_path):
 
     reborn = TestClient(create_app(cfg))
     reborn.cookies.set("session", cookie)
-    assert reborn.get("/api/state").status_code == 200
+    assert reborn.get("/api/state").json()["signed_in"] is True

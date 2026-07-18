@@ -8,12 +8,13 @@ import { showDashboard } from "./dashboard.js";
 import { openTutor } from "./tutor.js";
 import { goHome } from "./subjects.js";
 
+// needsAuth items lean on saved progress, so they only show for signed-in users.
 export const MENU_STUDY = [
   { key: "1", label: "quiz — all questions", sub: "weakest first", run: () => startQuiz("all") },
   { key: "2", label: "quiz — pick a topic", run: showTopics },
-  { key: "3", label: "quiz — my weak areas", run: () => startQuiz("weak") },
-  { key: "4", label: "quiz — unseen questions", run: () => startQuiz("unseen") },
-  { key: "5", label: "review — questions i got wrong", run: () => startQuiz("missed") },
+  { key: "3", label: "quiz — my weak areas", needsAuth: true, run: () => startQuiz("weak") },
+  { key: "4", label: "quiz — unseen questions", needsAuth: true, run: () => startQuiz("unseen") },
+  { key: "5", label: "review — questions i got wrong", needsAuth: true, run: () => startQuiz("missed") },
 ];
 
 async function loadState() {
@@ -52,20 +53,34 @@ function renderMenu() {
   banner.hidden = !S.sessionMsg;
   if (S.sessionMsg) banner.textContent = S.sessionMsg;
 
+  const signedIn = S.info.signed_in;
+
   const study = $("menu-study");
   study.replaceChildren();
   for (const item of MENU_STUDY) {
-    study.append(tocRow(item.key, item.label, item.sub, item.key === "1" ? S.info.question_count : null, item.run));
+    if (item.needsAuth && !signedIn) continue;
+    // "weakest first" only applies once there's progress to sort by
+    const sub = signedIn ? item.sub : null;
+    study.append(tocRow(item.key, item.label, sub, item.key === "1" ? S.info.question_count : null, item.run));
   }
 
   const prog = $("menu-progress");
   prog.replaceChildren();
-  prog.append(tocRow("6", "progress dashboard", null, null, showDashboard));
-  if (S.info.tutor_on) {
+  if (signedIn) {
+    prog.append(tocRow("6", "progress dashboard", null, null, showDashboard));
+  }
+  if (S.info.tutor_on && signedIn) {
     prog.append(tocRow("7", "talk to the tutor", null, null, () => openTutor(null, "menu")));
   }
   if (S.subjects.length > 1) {
     prog.append(tocRow("c", "switch subject", null, null, goHome));
+  }
+  $("progress-head").hidden = !prog.children.length;
+
+  const signinHint = $("signin-hint");
+  signinHint.hidden = signedIn;
+  if (!signedIn) {
+    signinHint.textContent = "sign in to track progress, target your weak areas, and use the tutor.";
   }
 
   const hint = $("tutor-hint");
