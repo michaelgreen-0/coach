@@ -1,0 +1,31 @@
+name: coach
+
+services:
+  coach:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: coach
+    container_name: coach
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - coach_data:/app/data   # sqlite auth db + per-user progress persist here
+    networks:
+      - edge
+    security_opt:
+      - "no-new-privileges:true"
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+
+networks:
+  edge:
+    name: docker_app-network
+    external: true
+
+volumes:
+  coach_data:
