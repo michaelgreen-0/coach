@@ -368,6 +368,19 @@ def test_tutor_daily_budget(tmp_path):
     assert "budget" in second.json()["error"]
 
 
+def test_tutor_rejects_oversized_message(tmp_path):
+    (tmp_path / "bank.json").write_text(json.dumps(BANK))
+    cfg = tmp_path / "coach.toml"
+    cfg.write_text(
+        f'subject = "Test Subject"\nbank = "bank.json"\ndata_dir = "{tmp_path / "data"}"\n'
+        '[tutor]\nmodel = "stub"\nbase_url = "http://localhost:9/v1"\n'
+    )
+    client = _signed_in_client(cfg)
+    res = client.post("/api/tutor", json={"message": "x" * 5000})
+    assert res.status_code == 400
+    assert "too long" in res.json()["error"]
+
+
 def test_auth_attempts_are_throttled(anon_client):
     for _ in range(10):
         res = anon_client.post("/api/login",

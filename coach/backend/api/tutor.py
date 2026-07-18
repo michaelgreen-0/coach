@@ -8,6 +8,21 @@ from .schemas import TutorRequest
 
 router = APIRouter(prefix="/api", tags=["tutor"])
 
+# Bound the size of a single tutor call so no one request can run up the bill:
+# the message is capped, and the client-supplied history is trimmed to the most
+# recent turns with each turn's text clipped.
+MAX_MESSAGE_CHARS = 4000
+MAX_HISTORY_TURNS = 12
+MAX_TURN_CHARS = 4000
+
+
+def _bounded_history(history: list[dict]) -> list[dict]:
+    turns = [
+        {"role": m["role"], "content": str(m.get("content", ""))[:MAX_TURN_CHARS]}
+        for m in history if m.get("role") in ("user", "assistant")
+    ]
+    return turns[-MAX_HISTORY_TURNS:]
+
 
 @router.post("/tutor")
 def tutor_chat(req: TutorRequest, state: AppState = Depends(get_state),
@@ -18,6 +33,8 @@ def tutor_chat(req: TutorRequest, state: AppState = Depends(get_state),
     st = state.subject_state(req.subject)
     if st is None:
         return err(f"unknown subject: {req.subject}", status=404)
+    if len(req.message) > MAX_MESSAGE_CHARS:
+        return err("message is too long", status=400)
 
     question: Question | None = None
     result: str | None = None
@@ -50,10 +67,7 @@ def tutor_chat(req: TutorRequest, state: AppState = Depends(get_state),
                               reveal_answer=reveal)
     except Exception as exc:  # constructing the client can fail (bad base_url, etc.)
         return err(f"could not start tutor: {exc}", status=502)
-    session.history = [
-        {"role": m["role"], "content": m["content"]}
-        for m in req.history if m.get("role") in ("user", "assistant")
-    ]
+    session.history = _bounded_history(req.history)
 
     def stream():
         try:

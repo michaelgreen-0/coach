@@ -18,6 +18,7 @@ class TutorConfig(BaseModel):
     api_key_env: str = "OPENAI_API_KEY"
     persona: str = "a friendly, encouraging quiz tutor"
     guidelines: str = ""
+    max_output_tokens: int = 700  # caps the cost of any single tutor reply
 
 
 class LimitsConfig(BaseModel):

@@ -67,6 +67,7 @@ class Tutor:
             base_url=cfg.base_url,
         )
         self.model = cfg.model
+        self.max_output_tokens = cfg.max_output_tokens
         self.history: list[dict] = []
         self.system = _BASE_SYSTEM.format(
             persona=cfg.persona, subject=subject, guidelines=cfg.guidelines
@@ -88,6 +89,7 @@ class Tutor:
         stream = self.client.chat.completions.create(
             model=self.model,
             messages=[{"role": "system", "content": self.system}, *self.history],
+            max_tokens=self.max_output_tokens,
             stream=True,
         )
         parts = []
