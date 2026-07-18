@@ -12,7 +12,6 @@ $("home-link").addEventListener("click", goHome);
 (async () => {
   try {
     const auth = await api("/api/auth");
-    S.inviteRequired = auth.invite_required;
     S.username = auth.signed_in ? auth.username : null;
     await enterApp();  // browse works signed in or out; the tutor needs an account
   } catch (e) {

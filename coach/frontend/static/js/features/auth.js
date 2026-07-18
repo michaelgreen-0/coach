@@ -28,7 +28,6 @@ function setAuthMode(mode) {
   $("auth-toggle").textContent = login
     ? "new here? create an account"
     : "have an account? sign in";
-  $("auth-invite-field").hidden = login || !S.inviteRequired;
   $("auth-password").autocomplete = login ? "current-password" : "new-password";
   $("auth-error").hidden = true;
 }
@@ -54,7 +53,7 @@ $("auth-form").addEventListener("submit", async (e) => {
   try {
     const data = S.authMode === "login"
       ? await api("/api/login", { username, password })
-      : await api("/api/register", { username, password, invite: $("auth-invite").value.trim() });
+      : await api("/api/register", { username, password });
     $("auth-password").value = "";
     await signedIn(data.username);
   } catch (err) {

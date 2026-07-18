@@ -16,7 +16,6 @@ from .services import tutor as tutor_service
 from .services.storage import load_bank
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "frontend" / "static"
-INVITE_ENV = "COACH_INVITE_CODE"
 SECURE_COOKIES_ENV = "COACH_SECURE_COOKIES"
 
 
@@ -50,7 +49,6 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         default_slug=cfg.subjects[0].slug,
         users=UserStore(db),
         sessions=SessionStore(db),
-        invite_code=os.environ.get(INVITE_ENV, ""),
         secure_cookies=_env_flag(os.environ.get(SECURE_COOKIES_ENV)),
         tutor_on=cfg.tutor is not None and tutor_service.tutor_available(cfg.tutor),
         limiter=RateLimiter(),

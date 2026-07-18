@@ -1,7 +1,6 @@
 export const S = {
   username: null,  // signed-in user
   authMode: "login",
-  inviteRequired: false,
   subjects: [],    // /api/subjects payload
   subject: null,   // active subject slug
   info: null,      // /api/state payload

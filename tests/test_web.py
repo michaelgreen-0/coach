@@ -249,7 +249,7 @@ def test_anonymous_gated_features_need_auth(anon_client):
     # the page itself and auth status stay public
     assert anon_client.get("/").status_code == 200
     status = anon_client.get("/api/auth").json()
-    assert status == {"signed_in": False, "username": None, "invite_required": False}
+    assert status == {"signed_in": False, "username": None}
 
 
 def test_anonymous_answers_are_not_saved(anon_client, tmp_path):
@@ -334,25 +334,6 @@ def test_progress_is_per_user(tmp_path):
     assert bob.get("/api/dashboard").json()["coverage"]["seen"] == 0
     assert (tmp_path / "data" / "progress" / "alice" / "progress.json").exists()
     assert not (tmp_path / "data" / "progress" / "bob").exists()
-
-
-def test_invite_code(tmp_path, monkeypatch):
-    (tmp_path / "bank.json").write_text(json.dumps(BANK))
-    cfg = tmp_path / "coach.toml"
-    cfg.write_text(
-        f'subject = "Test Subject"\nbank = "bank.json"\ndata_dir = "{tmp_path / "data"}"\n'
-    )
-    monkeypatch.setenv("COACH_INVITE_CODE", "sesame")
-    client = TestClient(create_app(cfg))
-
-    assert client.get("/api/auth").json()["invite_required"] is True
-    refused = client.post("/api/register",
-                          json={"username": "friend", "password": "password123"})
-    assert refused.status_code == 403
-    ok = client.post("/api/register",
-                     json={"username": "friend", "password": "password123",
-                           "invite": "sesame"})
-    assert ok.status_code == 200
 
 
 def test_request_rate_limit(tmp_path):

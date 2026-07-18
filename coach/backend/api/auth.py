@@ -1,5 +1,3 @@
-import secrets
-
 from fastapi import APIRouter, Cookie, Depends, Request, Response
 
 from ..core.models import Err
@@ -29,7 +27,6 @@ def auth_status(state: AppState = Depends(get_state), session: str | None = Cook
     return {
         "signed_in": username is not None,
         "username": username,
-        "invite_required": bool(state.invite_code),
     }
 
 
@@ -38,8 +35,6 @@ def register(req: RegisterRequest, request: Request, response: Response,
              state: AppState = Depends(get_state)):
     if not state.limiter.allow(f"auth:{client_ip(request)}", AUTH_ATTEMPTS, AUTH_WINDOW):
         return err("too many attempts — try again in a few minutes", status=429)
-    if state.invite_code and not secrets.compare_digest(req.invite, state.invite_code):
-        return err("wrong invite code", status=403)
     result = state.users.register(req.username, req.password)
     if isinstance(result, Err):
         return err(result.message)
