@@ -71,8 +71,10 @@ jobs:
         env:
           DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
           DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+          # absolute path (or ~-relative) to the edge proxy's Caddyfile on the host
+          EDGE_CADDYFILE: ${{ vars.EDGE_CADDYFILE }}
         run: |
-          ssh -i ~/.ssh/id_deploy "${DEPLOY_USER}@${DEPLOY_HOST}" 'bash -euo pipefail -s' <<'REMOTE'
+          ssh -i ~/.ssh/id_deploy "${DEPLOY_USER}@${DEPLOY_HOST}" 'bash -euo pipefail -s' "$EDGE_CADDYFILE" <<'REMOTE'
           cd ~/teach-me/docker
           docker compose build
           docker compose up -d
@@ -88,13 +90,15 @@ jobs:
             sleep 2
           done
 
-          # Make sure Caddy has the public route. Append-only-if-missing so this
-          # never duplicates the block and never touches the other site configs;
-          # it self-heals if a edge redeploy regenerated the Caddyfile.
-          CF=~/edge/docker/Caddyfile
-          if ! grep -q 'example.com' "$CF"; then
+          # Make sure the edge proxy has the public route. Append-only-if-missing
+          # so this never duplicates the block and never touches other site
+          # configs; it self-heals if the edge Caddyfile was regenerated.
+          CF="${1/#\~/$HOME}"   # EDGE_CADDYFILE, with any leading ~ resolved on the host
+          if [ -z "$CF" ]; then
+            echo "EDGE_CADDYFILE not set — skipping edge route registration"
+          elif ! grep -q 'example.com' "$CF"; then
             cp -a "$CF" "$CF.bak.$(date +%Y%m%d-%H%M%S)"
-            printf '\nexample.com {\n\tencode gzip\n\treverse_proxy coach:8000 {\n\t\theader_up X-Forwarded-For {remote_host}\n\t}\n}\n' >> "$CF"
+            printf '\nexample.com {\n\tencode gzip\n\theader Strict-Transport-Security "max-age=31536000"\n\treverse_proxy coach:8000 {\n\t\theader_up X-Forwarded-For {remote_host}\n\t}\n}\n' >> "$CF"
             docker exec caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
             docker exec caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
           fi
