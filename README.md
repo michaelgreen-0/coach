@@ -2,7 +2,7 @@
 
 Study tool that tracks your performance per topic, surfaces your weak spots, and gives you an LLM-powered tutor.
 
-This is deployed to **XYZ**
+This is deployed to [https://coach.michaelsprojects.dev](https://coach.michaelsprojects.dev/)
 
 Follow on for running this yourself (BYO API key for the tutor)
 
