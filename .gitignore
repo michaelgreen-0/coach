@@ -3,6 +3,10 @@
 
 # Secrets
 .env
+# Deploy keys — generate outside the repo; never commit
+gha_deploy
+gha_deploy.pub
+*.pem
 
 # Python
 __pycache__/
