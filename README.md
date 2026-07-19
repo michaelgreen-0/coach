@@ -1,3 +1,5 @@
+<img width="948" height="743" alt="Screenshot From 2026-07-19 10-16-50" src="https://github.com/user-attachments/assets/8f8b8ab3-b452-4c97-b35a-173265ca38ec" />
+
 # coach
 
 Study tool that tracks your performance per topic, surfaces your weak spots, and gives you an LLM-powered tutor.
